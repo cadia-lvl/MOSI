@@ -1,0 +1,510 @@
+import json
+import traceback
+import random
+import uuid
+import numpy as np
+from zipfile import ZipFile
+from operator import itemgetter
+
+from flask import (Blueprint, Response, send_from_directory, request,
+                   render_template, flash, redirect, url_for)
+from flask import current_app as app
+from flask_security import login_required, roles_accepted, current_user
+from sqlalchemy.exc import IntegrityError
+
+from mosi.models import (ABInstance, User, ABtest,
+                         CustomToken, CustomRecording, db)
+from mosi.db import (resolve_order, save_custom_wav_for_abtest, save_MOS_ratings,
+                     delete_mos_instance_db)
+from mosi.forms import (ABtestSelectAllForm, ABtestUploadForm, ABtestItemSelectionForm,
+                        ABtestTestForm, ABtestForm, ABtestDetailForm)
+
+abtest = Blueprint(
+    'abtest', __name__, template_folder='templates')
+
+
+@abtest.route('/abtest/')
+@login_required
+@roles_accepted('admin')
+def abtest_list():
+    page = int(request.args.get('page', 1))
+    abtest_list = ABtest.query.order_by(
+            resolve_order(
+                ABtest,
+                request.args.get('sort_by', default='created_at'),
+                order=request.args.get('order', default='desc')))\
+        .paginate(page, per_page=app.config['MOS_PAGINATION'])
+    return render_template(
+        'abtest_list.jinja',
+        abtest_list=abtest_list,
+        section='abtest')
+
+
+@abtest.route('/abtest/collection/none')
+@login_required
+@roles_accepted('admin')
+def abtest_collection_none():
+    page = int(request.args.get('page', 1))
+    collection = json.dumps({'name': 'Óháð söfnun', 'id': 0})
+    abtest_list = ABtest.query.filter(ABtest.collection_id == None).order_by(
+            resolve_order(
+                ABtest,
+                request.args.get('sort_by', default='created_at'),
+                order=request.args.get('order', default='desc')))\
+        .paginate(page, per_page=app.config['MOS_PAGINATION'])
+    return render_template(
+        'abtest_no_collection_list.jinja',
+        abtest_list=abtest_list,
+        collection=collection,
+        section='abtest')
+
+
+@abtest.route('/abtest/<int:id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def abtest_detail(id):
+    abtest = ABtest.query.get(id)
+    form = ABtestUploadForm()
+    select_all_forms = [
+        ABtestSelectAllForm(is_synth=True, select=True),
+        ABtestSelectAllForm(is_synth=True, select=False),
+        ABtestSelectAllForm(is_synth=False, select=True),
+        ABtestSelectAllForm(is_synth=False, select=False),
+    ]
+
+    if request.method == 'POST':
+        if form.validate():
+            if(form.is_g2p.data):
+                zip_file = request.files.get('files')
+                with ZipFile(zip_file, 'r') as zip:
+                    zip_name = zip_file.filename[:-4]
+                    tsv_name = '{}/index.tsv'.format(zip_name)
+                    successfully_uploaded = save_custom_wav_for_abtest(
+                        zip, zip_name, tsv_name, abtest, id)
+                    if len(successfully_uploaded) > 0:
+                        flash("Tókst að hlaða upp {} setningum.".format(
+                            len(successfully_uploaded)),
+                            category="success")
+                    else:
+                        flash(
+                            "Ekki tókst að hlaða upp neinum setningum.",
+                            category="warning")
+                return redirect(url_for('abtest.abtest_detail', id=id))
+            else:
+                flash(
+                    "Ekki tókst að hlaða inn skrá. Eingögnu hægt að hlaða inn skrám á stöðluðu formi.",
+                    category="danger")
+        else:
+            flash(
+                "Villa í formi, athugaðu að rétt sé fyllt inn og reyndu aftur.",
+                category="danger")
+
+    abtest_list = ABInstance.query.filter(ABInstance.abtest_id == id).order_by(
+            resolve_order(
+                ABInstance,
+                request.args.get('sort_by', default='id'),
+                order=request.args.get('order', default='desc'))).all()
+
+    ground_truths = []
+    synths = []
+    for m in abtest_list:
+        m.selection_form = ABtestItemSelectionForm(obj=m)
+        if m.is_synth:
+            synths.append(m)
+        else:
+            ground_truths.append(m)
+    ratings = abtest.getAllRatings()
+
+    return render_template(
+        'abtest.jinja',
+        abtest=abtest,
+        abtest_list=abtest_list,
+        select_all_forms=select_all_forms,
+        ground_truths=ground_truths,
+        synths=synths,
+        abtest_form=form,
+        ratings=ratings,
+        section='abtest')
+
+
+@abtest.route('/abtest/<int:id>/edit/detail', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def abtest_edit_detail(id):
+    abtest = ABtest.query.get(id)
+    form = ABtestDetailForm(request.form, obj=abtest)
+    if request.method == "POST":
+        if form.validate():
+            form.populate_obj(abtest)
+            db.session.commit()
+            return redirect(url_for("abtest.abtest_detail", id=abtest.id))
+    
+    form.use_latin_square.data = abtest.use_latin_square
+    form.show_text_in_test.data = abtest.show_text_in_test
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        type='edit',
+        action=url_for('abtest.abtest_edit_detail', id=abtest.id))
+
+
+@abtest.route('/abtest/take_test/<uuid:abtest_uuid>/', methods=['GET', 'POST'])
+def take_abtest(abtest_uuid):
+    abtest = ABtest.query.filter(ABtest.uuid == str(abtest_uuid)).first()
+    form = ABtestTestForm(request.form)
+    if request.method == "POST":
+        if form.validate():
+            try:
+                # We don't really want to require email ,
+                # but we have to fake one for the user model
+                user_uuid = uuid.uuid4()
+                email = "{}@lobe.is".format(user_uuid)
+                new_user = app.user_datastore.create_user(
+                    name=form.data["name"],
+                    email=email,
+                    password=None,
+                    uuid=user_uuid,
+                    audio_setup=form.data["audio_setup"],
+                    roles=[]
+                )
+                form.populate_obj(new_user)
+                abtest.add_participant(new_user)
+                db.session.commit()
+            except IntegrityError as e:
+                print(e)
+                app.logger.error(
+                    "Could not create user for application," +
+                    " email already in use")
+                flash("Þetta netfang er nú þegar í notkun", category='error')
+                return redirect(
+                    url_for("abtest.take_abtest", abtest_uuid=abtest_uuid))
+            return redirect(
+                url_for("abtest.abtest_test", id=abtest.id, uuid=new_user.uuid))
+
+    return render_template(
+        'take_abtest.jinja',
+        form=form,
+        type='create',
+        abtest=abtest,
+        action=url_for('abtest.take_abtest', abtest_uuid=abtest_uuid))
+
+
+@abtest.route('/abtest/<int:id>/abtest/<string:uuid>', methods=['GET', 'POST'])
+def abtest_test(id, uuid):
+    user = User.query.filter(User.uuid == uuid).first()
+    if user.is_admin():
+        if user.id != current_user.id:
+            flash("Þú hefur ekki aðgang að þessari síðu", category='error')
+            return redirect(url_for("abtest", id=id))
+    abtest = ABtest.query.get(id)
+    if abtest.use_latin_square:
+        abtest_configurations = abtest.getConfigurations()
+        abtest_list = abtest_configurations[(abtest.num_participants - 1) % len(abtest_configurations)]
+    else:
+        abtest_instances = ABInstance.query.filter(ABInstance.abtest_id == id, ABInstance.selected == True)
+        abtest_list = [instance for instance in abtest_instances if instance.path]
+        random.shuffle(abtest_list)
+
+    audio = []
+    audio_url = []
+    info = {'paths': [], 'texts': []}
+    for i in abtest_list:
+        if i.custom_recording:
+            audio.append(i.custom_recording)
+            audio_url.append(i.custom_recording.get_download_url())
+        else:
+            continue
+        info['paths'].append(i.path)
+        info['texts'].append(i.text)
+    audio_json = json.dumps([r.get_dict() for r in audio])
+    abtest_list_json = json.dumps([r.get_dict() for r in abtest_list])
+
+    return render_template(
+        'abtest_test.jinja',
+        abtest=abtest,
+        abtest_list=abtest_list,
+        user=user,
+        recordings=audio_json,
+        recordings_url=audio_url,
+        json_abtest=abtest_list_json,
+        section='abtest')
+
+
+@abtest.route('/abtest/<int:id>/abtest_results', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def abtest_results(id):
+    abtest = ABtest.query.get(id)
+    abtest_list = ABInstance.query.filter(ABInstance.abtest_id == id).order_by(
+            resolve_order(
+                ABInstance,
+                request.args.get('sort_by', default='id'),
+                order=request.args.get('order', default='desc'))).all()
+    ratings = abtest.getAllRatings()
+    max_placement = 1
+    for j in ratings:
+        if j.placement > max_placement:
+            max_placement = j.placement
+
+    if len(ratings) == 0:
+        return redirect(url_for('abtest.abtest_detail', id=abtest.id))
+    user_ids = abtest.getAllUsers()
+    users = User.query.filter(User.id.in_(user_ids)).all()
+
+    all_rating_stats = []
+    placement = [0]*max_placement
+    p_counter = [0]*max_placement
+    for i in ratings:
+        all_rating_stats.append(i.rating)
+        placement[i.placement - 1] += i.rating
+        p_counter[i.placement - 1] += 1
+    all_rating_stats = np.array(all_rating_stats)
+    for i in range(len(placement)):
+        if p_counter[i] != 0 and placement[i] != 0:
+            placement[i] = placement[i]/p_counter[i]
+    placement_info = {
+        'placement': placement,
+        'p_nums': list(range(1, len(abtest_list)))}
+    rating_json = {
+        'average': round(np.mean(all_rating_stats), 2),
+        'std': round(np.std(all_rating_stats), 2)}
+    abtest_stats = {
+        'names': [],
+        'means': [],
+        'total_amount': []}
+    for m in abtest_list:
+        abtest_stats['names'].append(str(m.id))
+        abtest_stats['means'].append(m.average_rating)
+        abtest_stats['total_amount'].append(m.number_of_ratings)
+    users_list = []
+    users_graph_json = []
+    for u in users:
+        user_ratings = abtest.getAllUserRatings(u.id)
+        ratings_stats = []
+        for r in user_ratings:
+            ratings_stats.append(r.rating)
+        ratings_stats = np.array(ratings_stats)
+
+        abtest_ratings_per_user = []
+        for m in abtest_list:
+            if not m.getUserRating(u.id):
+                abtest_ratings_per_user.append('')
+            else:
+                abtest_ratings_per_user.append(m.getUserRating(u.id))
+        user_ratings = {
+            "username": u.get_printable_name(),
+            "ratings": abtest_ratings_per_user}
+        temp = {
+            'user': u,
+            'mean': round(np.mean(ratings_stats), 2),
+            'std': round(np.std(ratings_stats), 2),
+            'total': len(ratings_stats),
+            'user_ratings': abtest_ratings_per_user}
+        temp2 = {
+            'user_ratings': user_ratings}
+        users_list.append(temp)
+        users_graph_json.append(temp2)
+
+    users_list = sorted(users_list, key=itemgetter('mean'))
+
+    all_usernames_list = []
+    user_name_dict = {}
+    for u in users_graph_json:
+        all_usernames_list.append(u['user_ratings']['username'])
+        user_name_dict[u['user_ratings']['username']] = {'fullrating': u['user_ratings']['ratings']}
+        indices = [i for i, x in enumerate(u['user_ratings']['ratings']) if x != '']
+        user_name_dict[u['user_ratings']['username']]['selectiveRatings'] = [u['user_ratings']['ratings'][i] for i in indices]
+        user_name_dict[u['user_ratings']['username']]['selectiveABtestIds'] = [abtest_stats['names'][i] for i in indices]
+        user_name_dict[u['user_ratings']['username']]['selectiveABtestMeans'] = [abtest_stats['means'][i] for i in indices]
+
+    # Average per voice index
+    ratings_by_voice = abtest.getResultsByVoice()
+    per_voice_data = {
+        "x": [],
+        "y": [],
+        "std": [],
+    }
+    for voice_idx, ratings in ratings_by_voice.items():
+        per_voice_data["x"].append(voice_idx)
+        per_voice_data["y"].append(round(np.mean([r.rating for r in ratings]), 2))
+        per_voice_data["std"].append(round(np.std([r.rating for r in ratings]), 2))
+
+    return render_template(
+        'abtest_results.jinja',
+        abtest=abtest,
+        abtest_stats=abtest_stats,
+        ratings=ratings,
+        placement_info=placement_info,
+        all_usernames_list=all_usernames_list,
+        user_name_dict=user_name_dict,
+        users=users_list,
+        rating_json=rating_json,
+        users_graph_json=users_graph_json,
+        per_voice_data=per_voice_data,
+        abtest_list=abtest_list,
+        section='abtest'
+    )
+
+
+@abtest.route('/abtest/<int:id>/abtest_results/download', methods=['GET'])
+@login_required
+@roles_accepted('admin')
+def download_abtest_data(id):
+    abtest = ABtest.query.get(id)
+    response_lines = [
+        "\t".join(map(str, line)) for line in abtest.getResultData()
+    ]
+    r = Response(response="\n".join(response_lines), status=200, mimetype="text/plain")
+    r.headers["Content-Type"] = "text/plain; charset=utf-8"
+    return r
+
+
+@abtest.route('/abtest/<int:id>/stream_zip')
+@login_required
+@roles_accepted('admin')
+def stream_abtest_zip(id):
+    abtest = ABtest.query.get(id)
+    abtest_list = ABInstance.query\
+        .filter(ABInstance.abtest_id == id)\
+        .filter(ABInstance.is_synth == False).order_by(
+            resolve_order(
+                ABInstance,
+                request.args.get('sort_by', default='id'),
+                order=request.args.get('order', default='desc'))).all()
+
+    results = 'abtest_instance_id\tcustom_token_id\ttoken_text\n'
+    for i in abtest_list:
+        results += "{}\t{}\t{}\n".format(
+            str(i.id),
+            str(i.custom_token.id),
+            i.custom_token.text)
+
+    generator = (cell for row in results for cell in row)
+
+    return Response(
+        generator,
+        mimetype="text/plain",
+        headers={
+            "Content-Disposition":
+            "attachment;filename={}_tokens.txt".format(
+                abtest.printable_id)}
+        )
+
+
+@abtest.route('/abtest/stream_abtest_demo')
+@login_required
+@roles_accepted('admin')
+def stream_abtest_index_demo():
+    other_dir = app.config["OTHER_DIR"]
+    try:
+        return send_from_directory(
+            other_dir, 'synidaemi_abtest.zip', as_attachment=True)
+    except Exception as error:
+        app.logger.error(
+            "Error downloading a custom recording : {}\n{}".format(
+                error, traceback.format_exc()))
+
+
+@abtest.route('/abtest/post_abtest_rating/<int:id>', methods=['POST'])
+def post_abtest_rating(id):
+    abtest_id = id
+    try:
+        abtest_id = save_abtest_ratings(request.form, request.files)
+    except Exception as error:
+        flash(
+            "Villa kom upp. Hafið samband við kerfisstjóra",
+            category="danger")
+        app.logger.error("Error posting recordings: {}\n{}".format(
+            error, traceback.format_exc()))
+        return Response(str(error), status=500)
+    if abtest_id is None:
+        flash("Engar einkunnir í MOS prófi.", category='warning')
+        return Response(url_for('abtest.abtest_list'), status=200)
+
+    flash("MOS próf klárað", category='success')
+    if current_user.is_anonymous:
+        return Response(
+            url_for('abtest.abtest_done', id=abtest_id), status=200)
+    else:
+        return Response(
+            url_for('abtest.abtest_detail', id=abtest_id), status=200)
+
+
+@abtest.route('/abtest/instances/<int:id>/edit', methods=['POST'])
+@login_required
+@roles_accepted('admin')
+def abtest_instance_edit(id):
+    try:
+        instance = ABInstance.query.get(id)
+        form = ABtestItemSelectionForm(request.form, obj=instance)
+        form.populate_obj(instance)
+        db.session.commit()
+        response = {}
+        return Response(json.dumps(response), status=200)
+    except Exception as error:
+        app.logger.error('Error creating a verification : {}\n{}'.format(
+            error, traceback.format_exc()))
+        errorMessage = "<br>".join(list("{}: {}".format(
+            key, ", ".join(value)) for key, value in form.errors.items()))
+        return Response(errorMessage, status=500)
+
+
+@abtest.route('/abtest/<int:id>/select_all', methods=['POST'])
+@login_required
+@roles_accepted('admin')
+def abtest_select_all(id):
+    try:
+        form = ABtestSelectAllForm(request.form)
+        is_synth = True if form.data['is_synth'] == 'True' else False
+        select = True if form.data['select'] == 'True' else False
+        abtest_list = ABInstance.query\
+            .filter(ABInstance.abtest_id == id)\
+            .filter(ABInstance.is_synth == is_synth).all()
+        for m in abtest_list:
+            m.selected = select
+        db.session.commit()
+        return redirect(url_for('abtest.abtest_detail', id=id))
+    except Exception as error:
+        print(error)
+        flash("Ekki gekk að merkja alla", category='warning')
+    return redirect(url_for('abtest.abtest_detail', id=id))
+
+
+@abtest.route('/abtest/instances/<int:id>/delete/', methods=['GET'])
+@login_required
+@roles_accepted('admin')
+def delete_abtest_instance(id):
+    instance = ABInstance.query.get(id)
+    abtest_id = instance.abtest_id
+    did_delete, errors = delete_abtest_instance_db(instance)
+    if did_delete:
+        flash("Línu var eytt", category='success')
+    else:
+        flash("Ekki gekk að eyða línu rétt", category='warning')
+        print(errors)
+    return redirect(url_for('abtest.abtest_detail', id=abtest_id))
+
+
+@abtest.route('/abtest/create', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def abtest_create():
+    try:
+        abtest = ABtest()
+        abtest.uuid = uuid.uuid4()
+        db.session.add(abtest)
+        db.session.commit()
+        flash("Nýrri AB prufu bætt við", category="success")
+        return redirect(url_for('abtest.abtest_detail', id=abtest.id))
+    except Exception as error:
+        flash("Error creating AB test.", category="danger")
+        app.logger.error("Error creating MOS {}\n{}".format(
+            error, traceback.format_exc()))
+    return redirect(url_for('abtest.abtest_list'))
+
+
+
+@abtest.route('/abtest-done/<int:id>', methods=['GET'])
+def abtest_done(id):
+    abtest = ABtest.query.get(id)
+    return render_template("abtest_done.jinja", abtest=abtest)

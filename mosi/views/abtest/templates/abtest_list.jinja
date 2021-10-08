@@ -1,0 +1,32 @@
+{% extends "_list.jinja" %}
+{% block title %}AB prufur{% endblock %}
+{% block total %}{{abtest_list.total}}{% endblock %}
+{% block buttons %}
+    {% if current_user.is_admin() %}
+        <a class='btn btn-secondary mr-2 fourth-bg float-right' href='{{url_for("abtest.abtest_create")}}'>
+            {{macros.btn_icon('plus', 'r')}}
+            Búa til AB prufu
+        </a>
+    {% endif %}
+{% endblock %}
+{% block table %}
+    {% if abtest_list.total > 0 %}
+        {% with abtest_list=abtest_list.items %}
+            {% include 'abtest_all_table.jinja'%}
+        {% endwith %}
+    {% endif %}
+{% endblock %}
+
+{% block pagination %}
+    {% if abtest_list.total > 0 %}
+        {{macros.pagination(abtest_list, url_for('abtest.abtest_list'))}}
+    {% endif %}
+{% endblock %}
+
+{% block no_results %}
+    {% if abtest_list.total == 0 %}
+        {{macros.no_results("Engar AB prufur",
+            "Til að sjá AB prufur þarf fyrst að búa þær til.",
+            url_for('mos.mos_create'), "Búa til AB prufu")}}
+    {% endif %}
+{% endblock %}

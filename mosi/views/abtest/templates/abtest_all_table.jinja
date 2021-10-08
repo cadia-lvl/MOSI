@@ -1,0 +1,27 @@
+<div class='table-responsive'>
+    <table class='table'>
+        <thead>
+            <th>
+                Dagsetning
+                {{macros.sort_th_a('created_at')}}
+            </th>
+            <th>
+                Auðkenni
+                {{macros.sort_th_a('id')}}
+            </th>
+            <th>
+                Spurning
+                {{macros.sort_th_a('question')}}
+            </th>
+        </thead>
+        <tbody>
+            {% for abtest in abtest_list %}
+                <tr>
+                    <td>{{abtest.created_at | datetime(format='low')}}</td>
+                    <td><a href={{abtest.url}}>{{abtest.printable_id}}</a></td>
+                    <td>{{abtest.question|default("-", true)}}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
