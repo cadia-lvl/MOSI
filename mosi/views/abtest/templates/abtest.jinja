@@ -68,25 +68,40 @@
 {% endblock %}
 
 {% block table %}
-    {% if abtest_list | length > 0%}
+    {% if sentence_groups | length > 0%}
         <div>
             <div>
-                <h3>Talgervingar sem búnar voru til</h3>
-                <p>Hljóðklippur sem búnar voru til með hjálp talgervils</p>
+                <h3>Setningar sem til skoðunar</h3>
+                <p>Eitthvað hér....</p>
             </div>
 
-            {% with abtest=abtest, abtest_list=synths, isSynthTable=true, selectAllForm=select_all_forms[0], deselectAllForm=select_all_forms[1] %}
-                {% include 'abtest_table.jinja'%}
+            {% with abtest=abtest, sentence_groups=sentence_groups %}
+                {% include 'abtest_sentence_table.jinja'%}
             {% endwith %}
         </div>
+    {% endif %}
 
-        <div class="mt-4">
-            <div class="">
-                <h3 class="">Upptökur sem teknar voru upp</h3>
-                <p>Upptökur sem teknar voru upp af alvöru fólki</p>
+    {% if abtest_tuples | length > 0%}
+        <div>
+            <div>
+                <h3>ABpróf sem til skoðunar</h3>
+                <p>Eitthvað hér....</p>
             </div>
 
-            {% with abtest=abtest, abtest_list=ground_truths, isSynthTable=false, selectAllForm=select_all_forms[2], deselectAllForm=select_all_forms[3]%}
+            {% with abtest=abtest, abtest_tuples=abtest_tuples, selectAllForm=select_all_forms[0], deselectAllForm=select_all_forms[1] %}
+                {% include 'abtest_tuple_table.jinja'%}
+            {% endwith %}
+        </div>
+    {%endif%}
+
+     {% if abtest_list | length > 0%}
+        <div>
+            <div>
+                <h3>Allar hljóðklippur</h3>
+                <p>Eitthvað hér....</p>
+            </div>
+
+            {% with abtest=abtest, abtest_list=abtest_list %}
                 {% include 'abtest_table.jinja'%}
             {% endwith %}
         </div>
@@ -148,6 +163,35 @@
         </form>
     </div>
 
+
+    {% for key, value in sentence_groups.items() %}
+        <div class="modal fade " id='sentenceGroupModal-{{key}}' tabindex="-1">
+            <form method='POST' enctype="multipart/form-data">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Velja hljóðklippur - {{value['info']['text']}}</h5>
+                            <button type="button" class="close" data-dismiss="modal">
+                            <span>&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            {% with data=sentence_groups[key] %}
+                                {% include 'abtest_permutation_table.jinja'%}
+                            {% endwith %}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>    
+    {% endfor %}
+
+
+
+
      <div class="modal fade" id='deleteModal' tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -174,6 +218,32 @@
         </div>
     </div>
 
+    <div class="modal fade" id='deleteTupleModal' tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Þú ert við það að eyða línu!</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    Með því að eyða þessari línu fremur þú alheimssglæp.
+                </p>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                <a id='confirmationButton' href='{{url_for("abtest.delete_abtest_tuple", id=1)}}' class='btn btn-danger'>
+                    Eyða
+                    {{macros.btn_icon('trash', 'l')}}
+                </a>
+            </div>
+            </div>
+        </div>
+    </div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -183,6 +253,9 @@
             $('#deleteModal #confirmationButton').attr('href', '{{url_for("abtest.delete_abtest_instance", id=1)}}'.replace("1", id));
         }
 
+        function deleteTuplebutton(id){
+            $('#deleteTupleModal #confirmationButton').attr('href', '{{url_for("abtest.delete_abtest_tuple", id=1)}}'.replace("1", id));
+        }
 
         $(".abtest-check-button").on('change', function(){
             var id = this.name.split('abtest-')[1];
@@ -215,20 +288,17 @@
         }
 
         function updateMOS(form) {
-            //console.log(form)
             var xhr = new XMLHttpRequest();
             xhr.onload = function(e) {
                 if(this.readyState === XMLHttpRequest.DONE) {
                     if(xhr.status == '200'){
                         var response = JSON.parse(xhr.responseText);
-                        //console.log(response);
                     } else{
                         promptError("Villa koma upp:", xhr.responseText, "");
                     }
                 }
             }
             let formData = new FormData(form);
-
 
             xhr.open("POST", form.action, true);
             xhr.send(formData);

@@ -1,0 +1,88 @@
+<div class='table-responsive'>
+    <table class='table'>
+        <thead>
+            <th>
+                Hljóðklippa 1
+            </th>
+            <th>
+                Hljóðklippa 2
+            </th>
+            <th>
+                Samanburðarhljóðklippa
+            </th>
+            <th>
+                <div class="btn-group" style="margin-bottom: -8px;">
+                    <form id='selectAllForm' method="POST" action="{{url_for('abtest.abtest_select_all', id=abtest.id)}}">
+                        {% for f in selectAllForm %}
+                            {{f}}
+                        {% endfor%}
+                        <button type='submit' id='selectAll' class='btn' style="margin-right: 0px;">
+                            <span class=''><i class="far fa-check-square text-success"></i></span>
+                        </button>
+                    </form>
+                    <form id='deselectAllForm' method="POST" action="{{url_for('abtest.abtest_select_all', id=abtest.id)}}">
+                        {% for f in deselectAllForm %}
+                            {{f}}
+                        {% endfor%}
+                        <button type='submit' id='selectAll' class='btn' style="margin-left: -5px;">
+                            <span class=''><i class="far fa-square text-success"></i></span>
+                        </button>
+                    </form>
+                </div>
+            </th>
+            <th class="text-center">
+                {{macros.btn_icon('trash', 'r')}}
+            </th>
+        </thead>
+        <tbody>
+            {% for t in abtest_tuples %}
+                <tr>
+                    <td >
+                        {{t.first.get_printable_id}}
+                        <audio id='audio-{{t.first.custom_recording.id}}' src="{{t.first.custom_recording.get_download_url()}}" type="audio/wav"></audio>
+                        <button type='button' class='btn btn-link btn-sm' onClick="play({{t.first.custom_recording.id}})">
+                            <i id='playButtonIcon-{{t.first.custom_recording.id}}' class='fa fa-play'></i>
+                        </button>
+                    </td>
+                    <td>
+                        {{t.second.get_printable_id}}
+                        <audio id="audio-{{t.second.custom_recording.id}}" src="{{t.second.custom_recording.get_download_url()}}" type="audio/wav"></audio>
+                        <button type='button' class='btn btn-link btn-sm' onClick="play({{t.second.custom_recording.id}})">
+                            <i id='playButtonIcon-{{t.second.custom_recording.id}}' class='fa fa-play'></i>
+                        </button>
+                    </td>
+                    <td>
+                        {% if not t.has_reference %}
+
+                        {% else %}
+                            {{t.ref.get_printable_id}}
+                            <audio id="audio-{{t.ref.custom_recording.id}}" src="{{t.ref.custom_recording.get_download_url()}}" type="audio/wav"></audio>
+                            <button type='button' class='btn btn-link btn-sm' onClick="play({{t.ref.custom_recording.id}})">
+                                <i id='playButtonIcon-{{t.ref.custom_recording.id}}' class='fa fa-play'></i>
+                            </button>
+                        {% endif %}
+                    </td>
+                    <td>
+                    {{t.selection_form}}
+                        <form class="abtest-check-button" id="verificationForm" name="abtest-{{abtest.id}}" action="{{t.ajax_edit_action}}" method="POST">
+                            {% for field in t.selection_form %}
+                                {% if field.name == "selected" %}
+                                    <div class="custom-control custom-switch">
+                                        {{field(checked=field.data, id="check-field", class_="")}}
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </form>
+                    </td>
+                    <td class="float-left">
+                        <button id="deleteButton" name="{{t.id}}" onClick="deleteTuplebutton(name)" class="btn btn-secondary btn-sm text-danger float-right" type="button" data-toggle='modal', data-target='#deleteTupleModal'>
+                            {{macros.btn_icon('trash', 'r')}} Eyða
+                        </button>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script src='{{url_for("main.static", filename="js/listControls.js")}}'></script>

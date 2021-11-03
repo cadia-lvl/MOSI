@@ -197,27 +197,17 @@ class CustomToken(BaseModel, db.Model):
     __tablename__ = 'CustomToken'
 
     def __init__(
-            self, text, original_fname, copied_token=False,
-            pron="Óþekkt", score=None, source="Óþekkt"):
+            self, text,
+            pron="Óþekkt", score=None, source="Upphleðsla"):
         self.text = text
-        self.original_fname = original_fname
         self.marked_as_bad = False
-        self.copied_token = copied_token
         self.pron = pron
         self.score = score
-        if not copied_token:
-            self.source = "Upphleðsla"
-        else:
-            self.source = source
+        self.source = source
+
 
     def get_url(self):
         return url_for('mos.custom_token', id=self.id)
-
-    def get_path(self):
-        return self.path
-
-    def get_fname(self):
-        return self.fname
 
     @hybrid_property
     def length(self):
@@ -229,60 +219,23 @@ class CustomToken(BaseModel, db.Model):
         else:
             return f'{self.text[:limit]}...'
 
-    def save_to_disk(self):
-        self.set_path()
-        f = open(self.path, 'w', encoding='utf-8')
-        f.write(self.text)
-        f.close()
-
-    def set_path(self):
-        self.fname = secure_filename("{}_u{:09d}.token".format(
-            os.path.splitext(self.original_fname)[0], self.id))
-        if self.mos_instance_id:
-            self.path = os.path.join(
-                app.config['MOS_TOKEN_DIR'], str(self.test_id), self.fname)
-        else:
-            self.path = os.path.join(
-                app.config['AB_TOKEN_DIR'], str(self.test_id), self.fname)
-
-    def get_configured_path(self):
-        '''
-        Get the path the program believes the token should be stored at
-        w.r.t. the current TOKEN_DIR environment variable
-        '''
-        path = os.path.join(
-            app.config['CUSTOM_TOKEN_DIR'], str(self.test_id), self.fname)
-        return path
-
     def get_dict(self):
         return {
             'id': self.id,
             'text': self.text,
-            'file_id': self.get_file_id(),
             'url': self.get_url()}
-
-    def get_file_id(self):
-        return os.path.splitext(self.fname)[0]
 
     def get_printable_id(self):
         return "U-{:09d}".format(self.id)
 
-    def get_directory(self):
-        return os.path.dirname(self.path)
 
     def get_download_url(self):
         return url_for('mos.download_custom_token', id=self.id)
 
     def copyToken(self, token):
-        self.fname = token.fname
-        self.path = token.path
         self.pron = token.pron
         self.score = token.score
         self.source = token.source
-
-    @property
-    def custom_recording(self):
-        return MosInstance.query.get(self.mos_instance_id).custom_recording
 
     @property
     def test_id(self):
@@ -292,7 +245,6 @@ class CustomToken(BaseModel, db.Model):
             return self.ABInstance.ABtest.id
 
     @hybrid_property
-    #def mos(self):
     def test_obj(self):
         if self.mos_instance_id:
             return self.mosInstance.mos
@@ -304,12 +256,7 @@ class CustomToken(BaseModel, db.Model):
         db.Integer, primary_key=True, nullable=False, autoincrement=True)
     text = db.Column(db.String)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    mos_instance_id = db.Column(db.Integer, db.ForeignKey("MosInstance.id"))
-    ab_instance_id = db.Column(db.Integer, db.ForeignKey("ABInstance.id"))
-    original_fname = db.Column(db.String, default='Unknown')
-    copied_token = db.Column(db.Boolean, default=False)
-    fname = db.Column(db.String)
-    path = db.Column(db.String)
+    recordings = relationship("CustomRecording", back_populates="token")
     marked_as_bad = db.Column(db.Boolean, default=False)
     pron = db.Column(db.String)
     score = db.Column(db.Float, default=-1)
@@ -320,7 +267,8 @@ class CustomToken(BaseModel, db.Model):
 class CustomRecording(BaseModel, db.Model):
     __tablename__ = 'CustomRecording'
 
-    def __init__(self, copied_recording=False):
+    def __init__(self, token, copied_recording=False):
+        self.token = token
         self.copied_recording = copied_recording
 
     def get_fname(self):
@@ -383,7 +331,7 @@ class CustomRecording(BaseModel, db.Model):
         return User.query.get(self.user_id)
 
     def get_printable_id(self):
-        return "S-{:09d}".format(self.id)
+        return "R-{:09d}".format(self.id)
 
     def get_printable_duration(self):
         if self.duration is not None:
@@ -414,25 +362,29 @@ class CustomRecording(BaseModel, db.Model):
                 secure_filename(f'{self.file_id}.wav'))
 
     def get_dict(self):
-        if self.custom_token is not None:
-            return {'id': self.id, 'token': self.custom_token.get_dict()}
+        if self.token is not None:
+            return {'id': self.id, 'url': self.get_download_url(), 'token': self.token.get_dict()}
         else:
-            return {'id': self.id, 'text': self.text, 'file_id': '', 'url': ''}
+            return {'id': self.id, 'url': self.get_download_url(), 'text': self.text, 'file_id': ''}
 
     @property
     def custom_token(self):
-        return self.mosInstance.custom_token
+        if self.mos_instance_id:
+            return self.mosInstance.custom_token
+        else:
+            return self.ABInstance.custom_token
 
     @property
     def text(self):
-        return self.custom_token.text
+        return self.token.text
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     original_fname = db.Column(db.String, default='Unknown')
+    token_id = db.Column(db.Integer, db.ForeignKey('CustomToken.id'))
+    token = db.relationship("CustomToken", back_populates="recordings")
     mos_instance_id = db.Column(db.Integer, db.ForeignKey("MosInstance.id"))
     AB_instance_id = db.Column(db.Integer, db.ForeignKey("ABInstance.id"))
-
     user_id = db.Column(
         db.Integer,
         db.ForeignKey('user.id', ondelete='SET NULL'),
@@ -481,11 +433,6 @@ class User(db.Model, UserMixin):
         'Role',
         secondary=roles_users,
         backref=db.backref('users', lazy='dynamic'))
-
-    @property
-    def progression(self):
-        if self.progression_id is not None:
-            return VerifierProgression.query.get(self.progression_id)
 
     def get_url(self):
         return url_for('user.user_detail', id=self.id)
@@ -677,10 +624,6 @@ class MosInstance(BaseModel, db.Model):
     id = db.Column(
         db.Integer, primary_key=True, nullable=False, autoincrement=True)
     mos_id = db.Column(db.Integer, db.ForeignKey('Mos.id'))
-    custom_token = db.relationship(
-        "CustomToken", lazy="joined",
-        backref=db.backref("mosInstance", uselist=False), uselist=False,
-        cascade='all, delete, delete-orphan')
     custom_recording = db.relationship(
         "CustomRecording", lazy="joined",
         backref=db.backref("mosInstance", uselist=False), uselist=False,
@@ -822,6 +765,9 @@ class ABtest(BaseModel, db.Model):
     ABtest_objects = db.relationship(
         "ABInstance", lazy='joined', backref="ABtest",
         cascade='all, delete, delete-orphan')
+    ABtest_tuples= db.relationship(
+        "ABTuple", lazy='joined', backref="ABtest",
+        cascade='all, delete, delete-orphan')
     num_participants = db.Column(db.Integer, default=0)
 
     def getAllRatings(self):
@@ -943,7 +889,7 @@ class ABtest(BaseModel, db.Model):
 
     @property
     def number_selected(self):
-        return sum(r.selected == True for r in self.ABtest_objects)
+        return sum(r.selected == True for r in self.ABtest_tuples)
 
     def add_participant(self, user):
         if not self.num_participants:
@@ -957,30 +903,26 @@ class ABInstance(BaseModel, db.Model):
     id = db.Column(
         db.Integer, primary_key=True, nullable=False, autoincrement=True)
     abtest_id = db.Column(db.Integer, db.ForeignKey('ABtest.id'))
-    custom_token = db.relationship(
-        "CustomToken", lazy="joined",
-        backref=db.backref("ABInstance", uselist=False), uselist=False,
-        cascade='all, delete, delete-orphan')
     custom_recording = db.relationship(
         "CustomRecording", lazy="joined",
         backref=db.backref("ABInstance", uselist=False), uselist=False,
         cascade='all, delete, delete-orphan')
-    ratings_first = db.relationship('ABRating', backref='ab_instance_first', lazy = 'dynamic', foreign_keys = 'ABRating.ab_instance_first_id')
-    ratings_second = db.relationship('ABRating', backref='ab_instance_second', lazy = 'dynamic', foreign_keys = 'ABRating.ab_instance_second_id')
-    ratings_reference = db.relationship('ABRating', backref='ab_instance_referance', lazy = 'dynamic', foreign_keys = 'ABRating.ab_instance_referance_id')
-
+    tuple_first = db.relationship('ABTuple', backref='ab_instance_first', lazy = 'dynamic', foreign_keys = 'ABTuple.ab_instance_first_id')
+    tuple_second = db.relationship('ABTuple', backref='ab_instance_second', lazy = 'dynamic', foreign_keys = 'ABTuple.ab_instance_second_id')
+    tuple_reference = db.relationship('ABTuple', backref='ab_instance_referance', lazy = 'dynamic', foreign_keys = 'ABTuple.ab_instance_referance_id')
+    
+    is_reference = db.Column(db.Boolean, default=False)
     is_synth = db.Column(db.Boolean, default=False)
     voice_idx = db.Column(db.Integer, default=0)
     utterance_idx = db.Column(db.Integer, default=0)
     question = db.Column(db.Text, default="")
-    selected = db.Column(db.Boolean, default=False, info={
-        'label': 'Hafa upptoku'})
 
-    def __init__(self, custom_token, custom_recording, voice_idx=None, utterance_idx=None):
-        self.custom_token = custom_token
+    def __init__(self, custom_recording, voice_idx=None, is_reference=False, utterance_idx=None, question=None):
         self.custom_recording = custom_recording
         self.voice_idx = voice_idx
         self.utterance_idx = utterance_idx
+        self.is_reference = is_reference
+        self.question = question
 
     def getUserRating(self, user_id):
         for r in self.ratings:
@@ -998,12 +940,12 @@ class ABInstance(BaseModel, db.Model):
 
     def get_dict(self):
         token = None
-        if self.custom_token is not None:
-            token = self.custom_token.get_dict()
+        if self.custom_recording.token is not None:
+            token = self.custom_recording.token.get_dict()
         return {
             'id': self.id,
             'token': token,
-            'mos_id': self.mos_id,
+            'abtest_id': self.abtest_id,
             'path': self.path,
             'text': self.text,
             'is_synth': self.is_synth,
@@ -1018,7 +960,7 @@ class ABInstance(BaseModel, db.Model):
 
     @property
     def text(self):
-        return self.custom_token.text
+        return self.custom_recording.token.text
 
     @property
     def ABtest(self):
@@ -1026,15 +968,11 @@ class ABInstance(BaseModel, db.Model):
 
     @property
     def get_printable_id(self):
-        return "AB-Setning {}".format(self.id)
+        return "AB-Setning-{}".format(self.id)
 
     @property
     def name(self):
-        return "AB-Setning {}".format(self.id)
-
-    @property
-    def ajax_edit_action(self):
-        return url_for('abtest.abtest_instance_edit', id=self.id)
+        return "AB-Setning-{}".format(self.id)
 
     @property
     def average_rating(self):
@@ -1060,22 +998,77 @@ class ABInstance(BaseModel, db.Model):
         return len(self.ratings)
 
 
+class ABTuple(BaseModel, db.Model):
+    __tablename__ = 'ABTuple'
+    __table_args__ = (
+        db.UniqueConstraint('ab_instance_first_id', 'ab_instance_second_id', 'ab_instance_referance_id'),
+      )
+    
+    id = db.Column(
+        db.Integer, primary_key=True, nullable=False, autoincrement=True)
+    ratings = db.relationship(
+        "ABRating", lazy='joined', backref="ABtuple",
+        cascade='all, delete, delete-orphan')
+
+    abtest_id = db.Column(db.Integer, db.ForeignKey('ABtest.id'))
+    ab_instance_first_id = db.Column(db.Integer, db.ForeignKey("ABInstance.id"))
+    ab_instance_second_id = db.Column(db.Integer, db.ForeignKey("ABInstance.id"))
+    ab_instance_referance_id = db.Column(db.Integer, db.ForeignKey("ABInstance.id"))
+    selected = db.Column(db.Boolean, default=False, info={
+        'label': 'Hafa upptoku'})
+
+    def __init__(self, abtest_id, ab_instance_first_id, ab_instance_second_id, ab_instance_referance_id=None):
+        self.abtest_id = abtest_id
+        self.ab_instance_first_id = ab_instance_first_id
+        self.ab_instance_second_id = ab_instance_second_id
+        self.ab_instance_referance_id = ab_instance_referance_id
+
+    @property
+    def first(self):
+        return self.ab_instance_first
+    
+    @property
+    def second(self):
+        return self.ab_instance_second
+
+    @property
+    def ref(self):
+        if self.ab_instance_referance_id:
+            return self.ab_instance_referance
+        else:
+            return None
+
+    @property
+    def token(self):
+        return self.first.custom_recording.token
+
+    @property
+    def text(self):
+        return self.first.text
+
+    @property
+    def has_reference(self):
+        return True if self.ab_instance_referance_id else False
+
+    @property
+    def ajax_edit_action(self):
+        return url_for('abtest.abtest_tuple_edit', id=self.id)
+
+
 class ABRating(BaseModel, db.Model):
     __tablename__ = 'ABRating'
     __table_args__ = (
-        db.UniqueConstraint('ab_instance_first_id', 'ab_instance_second_id', 'user_id'),
+        db.UniqueConstraint('ab_tuple_id', 'user_id'),
       )
     id = db.Column(
         db.Integer, primary_key=True, nullable=False, autoincrement=True)
     rating = db.Column(db.Integer, default=0, info={
         'label': 'Einkunn',
         'min': 0,
-        'max': 5,
+        'max': 2,
     })
 
-    ab_instance_first_id = db.Column(db.Integer, db.ForeignKey("ABInstance.id"))
-    ab_instance_second_id = db.Column(db.Integer, db.ForeignKey("ABInstance.id"))
-    ab_instance_referance_id = db.Column(db.Integer, db.ForeignKey("ABInstance.id"))
+    ab_tuple_id = db.Column(db.Integer, db.ForeignKey("ABTuple.id"))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     user = relationship("User", backref="ab_parents")
     placement = db.Column(db.Integer)

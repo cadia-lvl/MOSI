@@ -57,11 +57,13 @@
                     <td>
                         <form class="mos-check-button" id="verificationForm" name="mos-{{mos.id}}" action="{{mos.ajax_edit_action}}" method="POST">
                             {% for field in mos.selection_form %}
-                                <div class="custom-control custom-switch">
+                                
                                 {% if field.name == "selected" %}
+                                <div class="custom-control custom-switch">
                                     {{field(checked=field.data, id="check-field", class_="")}}
-                                {% endif %}
                                 </div>
+                                {% endif %}
+                                
                             {% endfor %}
                         </form>
                     </td>

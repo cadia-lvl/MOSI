@@ -14,27 +14,6 @@
                 Meðaleinkunn
             </th>
             <th>
-                <div class="btn-group" style="margin-bottom: -8px;">
-
-                    <form id='selectAllForm' method="POST" action="{{url_for('abtest.abtest_select_all', id=abtest.id)}}">
-                        {% for f in selectAllForm %}
-                            {{f}}
-                        {% endfor%}
-                        <button type='submit' id='selectAll' class='btn' style="margin-right: 0px;">
-                            <span class=''><i class="far fa-check-square text-success"></i></span>
-                        </button>
-                    </form>
-                    <form id='deselectAllForm' method="POST" action="{{url_for('abtest.abtest_select_all', id=abtest.id)}}">
-                        {% for f in deselectAllForm %}
-                            {{f}}
-                        {% endfor%}
-                        <button type='submit' id='selectAll' class='btn' style="margin-left: -5px;">
-                            <span class=''><i class="far fa-square text-success"></i></span>
-                        </button>
-                    </form>
-                </div>
-            </th>
-            <th>
             </th>
         </thead>
         <tbody>
@@ -46,25 +25,14 @@
                             <i id='playButtonIcon-{{abtest.custom_recording.id}}' class='fa fa-play'></i>
                         </button>
                     </td>
-                    {% if abtest.custom_token %}
-                        <td><a href={{abtest.custom_token.get_url()}} class='{% if abtest.custom_token.marked_as_bad %} text-warning {% endif %}'><code>{{abtest.custom_token.get_printable_id()}}</code></a></td>
+                    {% if abtest.custom_recording %}
+                        <td><a href={{abtest.get_printable_id}} class=''><code>{{abtest.get_printable_id}}</code></a></td>
                     {% else %}
                         <td>-</td>
                     {% endif %}
 
                     <td>{{abtest.text}}</td>
                     <td>{{abtest.average_rating}}</td>
-                    <td>
-                        <form class="abtest-check-button" id="verificationForm" name="abtest-{{abtest.id}}" action="{{abtest.ajax_edit_action}}" method="POST">
-                            {% for field in abtest.selection_form %}
-                                <div class="custom-control custom-switch">
-                                {% if field.name == "selected" %}
-                                    {{field(checked=field.data, id="check-field", class_="")}}
-                                {% endif %}
-                                </div>
-                            {% endfor %}
-                        </form>
-                    </td>
                     <td>
                         <button id="deleteButton" name="{{abtest.id}}" onClick="deletebutton(name)" class="btn btn-secondary btn-sm text-danger float-right" type="button" data-toggle='modal', data-target='#deleteModal'>
                             {{macros.btn_icon('trash', 'r')}} Eyða

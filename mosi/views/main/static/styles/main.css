@@ -222,3 +222,8 @@ a{
 .fourth-bg{
     background-color: #6E85B2 !important;
 }
+
+.abtest-table-line:hover{
+    background-color:#3E2C41;
+    cursor: pointer;
+}

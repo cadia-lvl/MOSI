@@ -21,7 +21,6 @@ def save_custom_wav_for_abtest(zip, zip_name, tsv_name, abtest, id):
     # Create parent folders if missing (this should probably be done somewhere else)
     pathlib.Path(app.config["AB_AUDIO_DIR"]).mkdir(exist_ok=True)
     pathlib.Path(app.config["AB_RECORDING_DIR"]).mkdir(exist_ok=True)
-    pathlib.Path(app.config["AB_TOKEN_DIR"]).mkdir(exist_ok=True)
 
     with zip.open(tsv_name) as tsvfile:
         wav_path_dir = app.config["AB_AUDIO_DIR"]+"{}".format(id)
@@ -33,12 +32,13 @@ def save_custom_wav_for_abtest(zip, zip_name, tsv_name, abtest, id):
         pathlib.Path(webm_path).mkdir(exist_ok=True)
         custom_tokens = []
         for row in rd:
-            print(row)
-            if row[0] and (len(row) == 3 or len(row) == 5 or len(row) == 6):
+            if row[0] and (len(row) == 6 or len(row) == 7):
                 # Validate columns
                 if not ((row[1].lower() == 's' or row[1].lower() == 'r') and row[2]):
                     continue
-                if len(row) >= 5 and not (row[3] and row[3].isnumeric() and row[4] and row[4].isnumeric()):
+                if not (row[3] == "1" or row[3] == "0"):
+                    continue
+                if len(row) >= 6 and not (row[4] and row[4].isnumeric() and row[5] and row[5].isnumeric()):
                     continue
 
                 for zip_info in zip.infolist():
@@ -48,31 +48,23 @@ def save_custom_wav_for_abtest(zip, zip_name, tsv_name, abtest, id):
                     if zip_info.filename == row[0]:
                         custom_token_name = '{}_m{:09d}'.format(
                             zip_name, id)
-                        custom_recording = CustomRecording()
                         custom_token = CustomToken(
                             row[2], custom_token_name)
-                        if len(row) == 3:
+                        custom_recording = CustomRecording(custom_token)
+                        
+                        if len(row) == 6:
                             ab_instance = ABInstance(
-                                custom_token=custom_token,
-                                custom_recording=custom_recording)
-                        elif len(row) == 4:
-                            ab_instance = ABInstance(
-                                custom_token=custom_token,
                                 custom_recording=custom_recording,
-                                voice_idx=row[3])
-                        elif len(row) == 5:
+                                is_reference=True if row[3] == "1" else False,
+                                voice_idx=row[4],
+                                utterance_idx=row[5])
+                        if len(row) == 7:
                             ab_instance = ABInstance(
-                                custom_token=custom_token,
                                 custom_recording=custom_recording,
-                                voice_idx=row[3],
-                                utterance_idx=row[4])
-                        elif len(row) == 6:
-                            ab_instance = ABInstance(
-                                custom_token=custom_token,
-                                custom_recording=custom_recording,
-                                voice_idx=row[3],
-                                utterance_idx=row[4],
-                                question=row[5])
+                                is_reference=True if row[3] == "1" else False,
+                                voice_idx=row[4],
+                                utterance_idx=row[5],
+                                question=row[6])
                         db.session.add(custom_token)
                         db.session.add(custom_recording)
                         db.session.add(ab_instance)
@@ -105,15 +97,10 @@ def save_custom_wav_for_abtest(zip, zip_name, tsv_name, abtest, id):
                         else:
                             ab_instance.is_synth = False
                         abtest.ABtest_objects.append(ab_instance)
-                        custom_tokens.append(custom_token)
-        '''
+        
         if len(custom_tokens) > 0:
-            custom_token_dir = app.config["AB_TOKEN_DIR"]+"{}".format(id)
-            pathlib.Path(custom_token_dir).mkdir(exist_ok=True)
-            for token in custom_tokens:
-                token.save_to_disk()
             db.session.commit()
-        '''
+        
         return custom_tokens
 
 
@@ -278,6 +265,36 @@ def delete_mos_instance_db(instance):
     except Exception as error:
         errors.append("Remove from disk error")
         print(f'{error}\n{traceback.format_exc()}')
+    try:
+        db.session.delete(instance)
+        db.session.commit()
+    except Exception as error:
+        errors.append("Remove from database error")
+        print(f'{error}\n{traceback.format_exc()}')
+    if errors:
+        return False, errors
+    return True, errors
+
+def delete_abtest_instance_db(instance):
+    errors = []
+    try:
+        os.remove(instance.custom_token.get_path())
+        os.remove(instance.custom_recording.get_path())
+    except Exception as error:
+        errors.append("Remove from disk error")
+        print(f'{error}\n{traceback.format_exc()}')
+    try:
+        db.session.delete(instance)
+        db.session.commit()
+    except Exception as error:
+        errors.append("Remove from database error")
+        print(f'{error}\n{traceback.format_exc()}')
+    if errors:
+        return False, errors
+    return True, errors
+
+def delete_abtest_tuple_db(instance):
+    errors = []
     try:
         db.session.delete(instance)
         db.session.commit()

@@ -1,0 +1,66 @@
+<div class='table-responsive'>
+    <table class='table'>
+        <thead>
+            <th>
+                Hljóðklippa 1
+            </th>
+            <th>
+                Hljóðklippa 2
+            </th>
+            <th>
+                Samanburðarhljóðklippa
+            </th>
+            <th>
+                Velja
+            </th>
+        </thead>
+        <tbody>
+            {% for p in data['info']['perms'] %}
+                <tr>
+                    <td>
+                        {{data['instances'][p[0]].get_printable_id}}
+                        <audio id='audio-{{data["instances"][p[0]].custom_recording.id}}' src="{{data['instances'][p[0]].custom_recording.get_download_url()}}" type="audio/wav"></audio>
+                        <button type='button' class='btn btn-link btn-sm' onClick="play({{data['instances'][p[0]].custom_recording.id}})">
+                            <i id='playButtonIcon-{{data['instances'][p[0]].custom_recording.id}}' class='fa fa-play'></i>
+                        </button>
+                    </td>
+                    <td>
+                        {{data['instances'][p[1]].get_printable_id}}
+                        <audio id="audio-{{data['instances'][p[1]].custom_recording.id}}" src="{{data['instances'][p[1]].custom_recording.get_download_url()}}" type="audio/wav"></audio>
+                        <button type='button' class='btn btn-link btn-sm' onClick="play({{data['instances'][p[1]].custom_recording.id}})">
+                            <i id='playButtonIcon-{{data["instances"][p[1]].custom_recording.id}}' class='fa fa-play'></i>
+                        </button>
+                    </td>
+                    <td>
+                        {% if p | length == 2 %}
+
+                        {% else %}
+                            {{data['instances'][p[2]].get_printable_id}}
+                            <audio id="audio-{{data['instances'][p[2]].custom_recording.id}}" src="{{data['instances'][p[2]].custom_recording.get_download_url()}}" type="audio/wav"></audio>
+                            <button type='button' class='btn btn-link btn-sm' onClick="play({{data['instances'][p[2]].custom_recording.id}})">
+                                <i id='playButtonIcon-{{data["instances"][p[2]].custom_recording.id}}' class='fa fa-play'></i>
+                            </button>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if p | length == 2 %}
+                            <a href='{{url_for("abtest.create_tuple", ab_id=abtest.id, first_id=data["instances"][p[0]].id, second_id=data["instances"][p[1]].id)}}' class='btn btn-primary btn-sm float-right mr-2 mt-2'>
+                                {{macros.btn_icon('download', 'r')}}
+                                Velja
+                            </a>
+                        {% else %}
+                            <a href='{{url_for("abtest.create_tuple", ab_id=abtest.id, first_id=data["instances"][p[0]].id, second_id=data["instances"][p[1]].id, ref_id=data["instances"][p[2]].id)}}' class='btn btn-primary btn-sm float-right mr-2 mt-2'>
+                                {{macros.btn_icon('download', 'r')}}
+                                Velja
+                            </a>
+                        {% endif %}
+                       
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script src='{{url_for("main.static", filename="js/listControls.js")}}'></script>
+

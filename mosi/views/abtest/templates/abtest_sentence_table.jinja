@@ -1,0 +1,35 @@
+<div class='table-responsive'>
+    <table class='table'>
+        <thead>
+            <th>
+                Fjöldi setninga
+            </th>
+            <th>
+                Texti
+            </th>
+            <th>
+                Fjöldi hljóðklippa
+            </th>
+            <th>
+                Inniheldur samanburðarklippu(ABX)
+            </th>
+        </thead>
+        <tbody>
+            {% for key, value in sentence_groups.items() %}
+                <tr class="abtest-table-line" data-toggle='modal', data-target='#sentenceGroupModal-{{key}}'>
+                    <td>
+                        {{key}}
+                    </td>
+                    <td>{{value['info']['text']}}</td>
+                    <td>{{value | length}}</td>
+                    <td>
+                        {{value['info']['has_reference']}}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script src='{{url_for("main.static", filename="js/listControls.js")}}'></script>
+

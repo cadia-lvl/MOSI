@@ -1,10 +1,11 @@
 import json
+from logging import error
 import traceback
 import random
 import uuid
 import numpy as np
 from zipfile import ZipFile
-from operator import itemgetter
+from operator import add, itemgetter
 
 from flask import (Blueprint, Response, send_from_directory, request,
                    render_template, flash, redirect, url_for)
@@ -12,10 +13,10 @@ from flask import current_app as app
 from flask_security import login_required, roles_accepted, current_user
 from sqlalchemy.exc import IntegrityError
 
-from mosi.models import (ABInstance, User, ABtest,
+from mosi.models import (ABInstance, User, ABtest, ABTuple,
                          CustomToken, CustomRecording, db)
-from mosi.db import (resolve_order, save_custom_wav_for_abtest, save_MOS_ratings,
-                     delete_mos_instance_db)
+from mosi.db import (resolve_order, save_custom_wav_for_abtest, delete_abtest_instance_db,
+                        delete_abtest_tuple_db)
 from mosi.forms import (ABtestSelectAllForm, ABtestUploadForm, ABtestItemSelectionForm,
                         ABtestTestForm, ABtestForm, ABtestDetailForm)
 
@@ -58,6 +59,55 @@ def abtest_collection_none():
         collection=collection,
         section='abtest')
 
+@abtest.route('/abtest/create_tuple/<int:ab_id>/<int:first_id>/<int:second_id>/<int:ref_id>')
+@abtest.route('/abtest/create_tuple/<int:ab_id>/<int:first_id>/<int:second_id>')
+@login_required
+@roles_accepted('admin')
+def create_tuple(ab_id, first_id, second_id, ref_id=None):
+    abtest = ABtest.query.get(ab_id)
+    first = ABInstance.query.get(first_id)
+    second = ABInstance.query.get(second_id)
+    ref = ABInstance.query.get(ref_id) if ref_id else None
+    abtuple = None
+
+    if abtest and first and second:
+        if first.abtest_id == abtest.id and second.abtest_id == abtest.id:
+            if first.id != second.id:
+                if ref and ref.id != first.id and ref.id != second.id and ref.abtest_id == abtest.id:
+                    abtuple = ABTuple(abtest.id, first_id, second_id, ref_id)
+                else:
+                    abtuple = ABTuple(abtest.id, first_id, second_id, None)
+
+    existing_tuple = ABTuple.query.filter(
+        ABTuple.abtest_id == ab_id,
+        ABTuple.ab_instance_first_id == first_id,
+        ABTuple.ab_instance_second_id == second_id,
+        ABTuple.ab_instance_referance_id == ref_id).first()
+
+    if existing_tuple:
+        flash("Ekki hægt að bæta við línu sem hefur verið bætt við áður", category='warning')
+
+    elif abtuple:
+        db.session.add(abtuple)
+        db.session.commit()
+        flash("Línu var bætt við", category='success')
+    else:
+        flash("Ekki gekk að bæta við línu", category='warning')
+    return redirect(url_for('abtest.abtest_detail', id=ab_id))
+        
+@abtest.route('/abtest/tuple/<int:id>/delete/', methods=['GET'])
+@login_required
+@roles_accepted('admin')
+def delete_abtest_tuple(id):
+    tuple = ABTuple.query.get(id)
+    abtest_id = tuple.abtest_id
+    did_delete, errors = delete_abtest_tuple_db(tuple)
+    if did_delete:
+        flash("Línu var eytt", category='success')
+    else:
+        flash("Ekki gekk að eyða línu rétt", category='warning')
+        print(errors)
+    return redirect(url_for('abtest.abtest_detail', id=abtest_id))
 
 @abtest.route('/abtest/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -66,10 +116,8 @@ def abtest_detail(id):
     abtest = ABtest.query.get(id)
     form = ABtestUploadForm()
     select_all_forms = [
-        ABtestSelectAllForm(is_synth=True, select=True),
-        ABtestSelectAllForm(is_synth=True, select=False),
-        ABtestSelectAllForm(is_synth=False, select=True),
-        ABtestSelectAllForm(is_synth=False, select=False),
+        ABtestSelectAllForm(select=True),
+        ABtestSelectAllForm(select=False)
     ]
 
     if request.method == 'POST':
@@ -105,24 +153,44 @@ def abtest_detail(id):
                 request.args.get('sort_by', default='id'),
                 order=request.args.get('order', default='desc'))).all()
 
-    ground_truths = []
-    synths = []
-    for m in abtest_list:
-        m.selection_form = ABtestItemSelectionForm(obj=m)
-        if m.is_synth:
-            synths.append(m)
+    sentence_groups = {}
+    for s in abtest_list:
+        s_id = s.utterance_idx
+        if s_id in sentence_groups:
+            if s.text == sentence_groups[s_id]['info']['text']:
+                sentence_groups[s_id]['instances'].append(s)
+                if sentence_groups[s_id]['info']['has_reference'] == False and s.is_reference:
+                    sentence_groups[s_id]['info']['has_reference'] = len(sentence_groups[s_id]['instances']) - 1
         else:
-            ground_truths.append(m)
+            sentence_groups[s_id] = {'info': {'has_reference': 0, 'text': s.text}, 'instances': [s]}
     ratings = abtest.getAllRatings()
+
+    
+    for key in sentence_groups:
+        additional = []
+        perms = [[a, b] for a in range(len(sentence_groups[key]["instances"])) for b in range(len(sentence_groups[key]["instances"]))[a + 1:]]
+        sentence_groups[key]['info']['perms'] = perms
+        
+        if sentence_groups[key]['info']['has_reference']:
+            for p in perms:
+                ref_idx = sentence_groups[key]['info']['has_reference']
+                if sentence_groups[key]['instances'][ref_idx] not in [sentence_groups[key]['instances'][p[0]], sentence_groups[key]['instances'][p[1]]]:
+                    additional.append(p+[ref_idx])
+        sentence_groups[key]['info']['perms'] = sentence_groups[key]['info']['perms'] + additional
+
+    abtest_tuples = ABTuple.query.filter(ABTuple.abtest_id == id).all()
+    
+    for ab in abtest_tuples:
+        ab.selection_form = ABtestItemSelectionForm(obj=ab)
 
     return render_template(
         'abtest.jinja',
         abtest=abtest,
         abtest_list=abtest_list,
         select_all_forms=select_all_forms,
-        ground_truths=ground_truths,
-        synths=synths,
+        sentence_groups=sentence_groups,
         abtest_form=form,
+        abtest_tuples=abtest_tuples,
         ratings=ratings,
         section='abtest')
 
@@ -197,36 +265,40 @@ def abtest_test(id, uuid):
             flash("Þú hefur ekki aðgang að þessari síðu", category='error')
             return redirect(url_for("abtest", id=id))
     abtest = ABtest.query.get(id)
-    if abtest.use_latin_square:
-        abtest_configurations = abtest.getConfigurations()
-        abtest_list = abtest_configurations[(abtest.num_participants - 1) % len(abtest_configurations)]
-    else:
-        abtest_instances = ABInstance.query.filter(ABInstance.abtest_id == id, ABInstance.selected == True)
-        abtest_list = [instance for instance in abtest_instances if instance.path]
-        random.shuffle(abtest_list)
+    abtest_tuples = ABTuple.query.filter(ABTuple.abtest_id == id, ABTuple.selected == True)
+    abtest_list = [tuple for tuple in abtest_tuples if tuple.first.path and tuple.second.path]
+    random.shuffle(abtest_list)
 
-    audio = []
-    audio_url = []
-    info = {'paths': [], 'texts': []}
+    
+    audio_data = []
+    json_list = []
     for i in abtest_list:
-        if i.custom_recording:
-            audio.append(i.custom_recording)
-            audio_url.append(i.custom_recording.get_download_url())
-        else:
-            continue
-        info['paths'].append(i.path)
-        info['texts'].append(i.text)
-    audio_json = json.dumps([r.get_dict() for r in audio])
-    abtest_list_json = json.dumps([r.get_dict() for r in abtest_list])
+        
+        json_list_el = {}
+        ab_tuple = {'first': {}, 'second': {}}
+        ab_tuple['first']['recording'] = i.first.custom_recording
+        ab_tuple['first']['url'] = i.first.custom_recording.get_download_url()
+        ab_tuple['second']['recording'] = i.second.custom_recording
+        ab_tuple['second']['url'] = i.second.custom_recording.get_download_url()
+        json_list_el = {'first': i.first.custom_recording.get_dict(), 'second':i.second.custom_recording.get_dict(), 'token': i.token.get_dict()}
+        if i.has_reference:
+            ab_tuple['reference'] = {'recording': i.ref.custom_recording}
+            ab_tuple['reference']['url'] = i.ref.custom_recording.get_download_url()
+            json_list_el['reference'] = i.ref.custom_recording.get_dict()
+        audio_data.append(ab_tuple)
+        json_list.append(json_list_el)
 
+
+    audio_json = json.dumps(json_list)
+
+    
     return render_template(
         'abtest_test.jinja',
         abtest=abtest,
         abtest_list=abtest_list,
         user=user,
-        recordings=audio_json,
-        recordings_url=audio_url,
-        json_abtest=abtest_list_json,
+        audio_data=audio_data,
+        audio_json=audio_json,
         section='abtest')
 
 
@@ -430,14 +502,15 @@ def post_abtest_rating(id):
             url_for('abtest.abtest_detail', id=abtest_id), status=200)
 
 
-@abtest.route('/abtest/instances/<int:id>/edit', methods=['POST'])
+@abtest.route('/abtest/tuple/<int:id>/edit', methods=['POST'])
 @login_required
 @roles_accepted('admin')
-def abtest_instance_edit(id):
+def abtest_tuple_edit(id):
+    print('asdfasdf')
     try:
-        instance = ABInstance.query.get(id)
-        form = ABtestItemSelectionForm(request.form, obj=instance)
-        form.populate_obj(instance)
+        tuple = ABTuple.query.get(id)
+        form = ABtestItemSelectionForm(request.form, obj=tuple)
+        form.populate_obj(tuple)
         db.session.commit()
         response = {}
         return Response(json.dumps(response), status=200)

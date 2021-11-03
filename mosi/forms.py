@@ -14,7 +14,7 @@ from wtforms.validators import InputRequired
 from wtforms_alchemy import ModelForm
 from wtforms_components import IntegerField
 
-from mosi.models import (Configuration, Role, User, Mos, MosInstance, ABtest, ABInstance, db)
+from mosi.models import (Configuration, Role, User, Mos, MosInstance, ABtest, ABInstance, ABTuple, db)
 
 
 class MultiCheckboxField(SelectMultipleField):
@@ -311,13 +311,6 @@ class MosTestForm(Form):
     audio_setup = StringField("Hvers konar heyrnatól/hátalara ertu með?", [validators.required()])
 
 
-class MosItemSelectionForm(ModelForm):
-    class Meta:
-        model = MosInstance
-        exclude = ['is_synth']
-
-
-
 
 
 class MosUploadForm(FlaskForm):
@@ -395,8 +388,8 @@ class ABtestTestForm(Form):
 
 class ABtestItemSelectionForm(ModelForm):
     class Meta:
-        model = ABInstance
-        exclude = ['is_synth']
+        model = ABTuple
+        exclude = []
 
 
 class ABtestUploadForm(FlaskForm):
