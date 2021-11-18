@@ -16,7 +16,7 @@ from sqlalchemy.exc import IntegrityError
 from mosi.models import (ABInstance, User, ABtest, ABTuple,
                          CustomToken, CustomRecording, db)
 from mosi.db import (resolve_order, save_custom_wav_for_abtest, delete_abtest_instance_db,
-                        delete_abtest_tuple_db)
+                        save_abtest_ratings, delete_abtest_tuple_db)
 from mosi.forms import (ABtestSelectAllForm, ABtestUploadForm, ABtestItemSelectionForm,
                         ABtestTestForm, ABtestForm, ABtestDetailForm)
 
@@ -164,7 +164,6 @@ def abtest_detail(id):
         else:
             sentence_groups[s_id] = {'info': {'has_reference': 0, 'text': s.text}, 'instances': [s]}
     ratings = abtest.getAllRatings()
-
     
     for key in sentence_groups:
         additional = []
@@ -275,20 +274,19 @@ def abtest_test(id, uuid):
     for i in abtest_list:
         
         json_list_el = {}
-        ab_tuple = {'first': {}, 'second': {}}
+        ab_tuple = {'first': {}, 'second': {}, 'tuple': i}
         ab_tuple['first']['recording'] = i.first.custom_recording
         ab_tuple['first']['url'] = i.first.custom_recording.get_download_url()
         ab_tuple['second']['recording'] = i.second.custom_recording
         ab_tuple['second']['url'] = i.second.custom_recording.get_download_url()
-        json_list_el = {'first': i.first.custom_recording.get_dict(), 'second':i.second.custom_recording.get_dict(), 'token': i.token.get_dict()}
+        json_list_el = {'tuple': i.get_dict(),'first': i.first.custom_recording.get_dict(), 'second':i.second.custom_recording.get_dict(), 'token': i.token.get_dict()}
         if i.has_reference:
             ab_tuple['reference'] = {'recording': i.ref.custom_recording}
             ab_tuple['reference']['url'] = i.ref.custom_recording.get_download_url()
             json_list_el['reference'] = i.ref.custom_recording.get_dict()
         audio_data.append(ab_tuple)
         json_list.append(json_list_el)
-
-
+        
     audio_json = json.dumps(json_list)
 
     

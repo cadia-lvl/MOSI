@@ -20,26 +20,26 @@
         </th>
     </thead>
     <tbody>
-        {% for mos in mos_list %}
+        {% for abtest in abtest_list %}
             <tr>
                 <td>
-                    <audio id="audio-{{mos.custom_recording.id}}" src={{mos.custom_recording.get_download_url()}} type="audio/wav"></audio>
-                    <button type='button' class='btn btn-link btn-sm' onClick="play({{mos.custom_recording.id}})">
-                        <i id='playButtonIcon-{{mos.custom_recording.id}}' class='fa fa-play'></i>
+                    <audio id="audio-{{abtest.custom_recording.id}}" src={{abtest.custom_recording.get_download_url()}} type="audio/wav"></audio>
+                    <button type='button' class='btn btn-link btn-sm' onClick="play({{abtest.custom_recording.id}})">
+                        <i id='playButtonIcon-{{abtest.custom_recording.id}}' class='fa fa-play'></i>
                     </button>
                 </td>
-                {% if mos.custom_token %}
-                    <td><a href={{mos.custom_token.get_url()}} class='{% if mos.custom_token.marked_as_bad %} text-warning {% endif %}'><code>{{mos.custom_token.get_printable_id()}}</code></a></td>
+                {% if abtest.token %}
+                    <td><a href={{abtest.token.get_url()}}><code>{{abtest.token.get_printable_id()}}</code></a></td>
                 {% else %}
                     <td>-</td>
                 {% endif %}
 
-                <td>{{mos.text}}</td>
+                <td>{{abtest.text}}</td>
                 <td>
-                    {{mos.number_of_ratings}}
+                    {{abtest.number_of_ratings}}
                 </td>
-                <td>{{mos.average_rating}}</td>
-                <td>{{mos.std_of_ratings}}</td>
+                <td>{{abtest.average_rating}}</td>
+                <td>{{abtest.std_of_ratings}}</td>
             </tr>
         {% endfor %}
     </tbody>

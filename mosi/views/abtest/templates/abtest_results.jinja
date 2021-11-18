@@ -6,13 +6,13 @@
 {% block body %}
     <div class='row'>
         <div class='col-12'>
-            <h1 class='font-weight-bold'>Niðurstöður fyrir MOS#{{mos.id}}</h1>
+            <h1 class='font-weight-bold'>Niðurstöður fyrir abtest#{{abtest.id}}</h1>
         </div>
 
         <div class='col-12 mb-4'>
-            <a href='{{url_for("mos.download_mos_data", id=mos.id)}}'
+            <a href='{{url_for("abtest.download_abtest_data", id=abtest.id)}}'
                class='btn btn-primary btn-sm float-right mr-2 mt-2'
-               target="_blank" download="mos_data_{{mos.id}}.tsv"
+               target="_blank" download="abtest_data_{{abtest.id}}.tsv"
                >
                 {{macros.btn_icon('download', 'r')}}
                 Sækja gögn
@@ -28,13 +28,13 @@
                 <div class='col-6 text-right'><p>{{users | length }}</p></div>
 
                 <div class='col-6'><p>Fjöldi setninga:</p></div>
-                <div class='col-6 text-right'><p>{{mos_list | length}}</p></div>
+                <div class='col-6 text-right'><p>{{abtest_list | length}}</p></div>
             </div>
         </div>
         <div class='col-md-6 col-12'>
             <div class='row'>
                 <div class='col-6'><p>Búð til:</p></div>
-                <div class='col-6 text-right'><p>{{mos.created_at | datetime(format='low')}}</p></div>
+                <div class='col-6 text-right'><p>{{abtest.created_at | datetime(format='low')}}</p></div>
 
                 <div class='col-6'><p>Meðaleinkunn:</p></div>
                 <div class='col-6 text-right'><p>{{rating_json.average}}</p></div>
@@ -53,7 +53,7 @@
         <div class="collapse" id="collapse-users">
             {% if users|length > 0 %}
                 {% with users=users %}
-                    {% include 'mos_users_table.jinja'%}
+                    {% include 'abtest_users_table.jinja'%}
                 {% endwith %}
             {% endif %}
         </div>
@@ -64,9 +64,9 @@
              <p class="py-2 text-success"><i class="fas fa-plus mr-2" aria-hidden="true"></i> Setningar</p>
         </div>
         <div class="collapse" id="collapse-ratings">
-            {% if mos_list|length > 0 %}
-                {% with mos_list=mos_list %}
-                    {% include 'mos_results_instances_table.jinja'%}
+            {% if abtest_list|length > 0 %}
+                {% with abtest_list=abtest_list %}
+                    {% include 'abtest_results_instances_table.jinja'%}
                 {% endwith %}
             {% endif %}
         </div>
@@ -80,7 +80,7 @@
             <div class="collapse" id="collapse-voices">
                 {% if per_voice_data|length > 0 %}
                     {% with per_voice_data=per_voice_data %}
-                        {% include 'mos_results_voices_table.jinja'%}
+                        {% include 'abtest_results_voices_table.jinja'%}
                     {% endwith %}
                 {% endif %}
             </div>
@@ -233,10 +233,10 @@
             if(chosenName == "Allir notendur"){
                 var users = {{users_graph_json}}
                 var placement = {{placement_info}}
-                var mos_stats = {{mos_stats}}
+                var abtest_stats = {{abtest_stats}}
                 users.forEach( user => {
                     var trace = {
-                        x: {{mos_stats}}['names'],
+                        x: {{abtest_stats}}['names'],
                         y: user.user_ratings.ratings,
                         visible: 'legendonly',
                         fill: 'scatter',
@@ -250,8 +250,8 @@
                     data.push(trace)
                 });
                 var trace2 = {
-                    x: {{mos_stats}}['names'],
-                    y: {{mos_stats}}['means'],
+                    x: {{abtest_stats}}['names'],
+                    y: {{abtest_stats}}['means'],
                     fill: 'scatter',
                     marker: {
                         size: 12
@@ -263,7 +263,7 @@
             }
             else{
                 var trace = {
-                    x: {{user_name_dict}}[chosenName]['selectiveMosIds'],
+                    x: {{user_name_dict}}[chosenName]['selectiveabtestIds'],
                     y: {{user_name_dict}}[chosenName]['selectiveRatings'],
                     fill: 'scatter',
                     marker: {
@@ -274,8 +274,8 @@
                 };
                 data.push(trace)
                 var trace2 = {
-                    x: {{user_name_dict}}[chosenName]['selectiveMosIds'],
-                    y: {{user_name_dict}}[chosenName]['selectiveMosMeans'],
+                    x: {{user_name_dict}}[chosenName]['selectiveabtestIds'],
+                    y: {{user_name_dict}}[chosenName]['selectiveabtestMeans'],
                     fill: 'scatter',
                     marker: {
                         size: 12
@@ -334,7 +334,7 @@
 
         var users = {{users_graph_json}}
         var placement = {{placement_info}}
-        var mos_stats = {{mos_stats}}
+        var abtest_stats = {{abtest_stats}}
 
         var container_bar = document.getElementById('bar-chart');
         var layout_bar = {
@@ -363,15 +363,15 @@
             }
         };
         //set max width on each bar
-        if(mos_stats['names'].length > 4){
-            width = Array(mos_stats['names'].length).fill(0.9);
+        if(abtest_stats['names'].length > 4){
+            width = Array(abtest_stats['names'].length).fill(0.9);
         }
         else{
-            width = Array(mos_stats['names'].length).fill(0.2);
+            width = Array(abtest_stats['names'].length).fill(0.2);
         }
         var trace1 = {
-            x: mos_stats['names'],
-            y: mos_stats['means'],
+            x: abtest_stats['names'],
+            y: abtest_stats['means'],
             name: 'Meðaleinkunn',
             type: 'bar',
             marker: {
@@ -385,7 +385,7 @@
         Plotly.newPlot(container_bar, data, layout_bar, config);
 
         var container_bar = document.getElementById('bar-chart-total-number');
-        var y_scale_max = Math.max(5, Math.max.apply(Math, mos_stats['total_amount']))
+        var y_scale_max = Math.max(5, Math.max.apply(Math, abtest_stats['total_amount']))
         var layout_bar = {
             plot_bgcolor: 'rgba(0, 0, 0, 0)',
             paper_bgcolor: 'rgba(0, 0, 0, 0)',
@@ -413,22 +413,22 @@
             }
         };
         //set max width on each bar
-        if(mos_stats['names'].length > 4){
-            width = Array(mos_stats['names'].length).fill(0.9);
+        if(abtest_stats['names'].length > 4){
+            width = Array(abtest_stats['names'].length).fill(0.9);
         }
         else{
-            width = Array(mos_stats['names'].length).fill(0.2);
+            width = Array(abtest_stats['names'].length).fill(0.2);
             //width = []
-            //for(var i = 0; i < mos_stats['names'].length; i++){
-            //    var nw = 0.9/mos_stats['names'].length
+            //for(var i = 0; i < abtest_stats['names'].length; i++){
+            //    var nw = 0.9/abtest_stats['names'].length
             //    var col_width = Math.min(1, 1)
             //    width.push(col_width)
             //}
         }
 
         var trace1 = {
-            x: mos_stats['names'],
-            y:  mos_stats['total_amount'],
+            x: abtest_stats['names'],
+            y:  abtest_stats['total_amount'],
             name: 'Fjöldi einkunna',
             type: 'bar',
             marker: {
@@ -471,10 +471,10 @@
         };
         //set max width on each bar
         if(placement['placement'].length > 4){
-            width = Array(mos_stats['names'].length).fill(0.9);
+            width = Array(abtest_stats['names'].length).fill(0.9);
         }
         else{
-            width = Array(mos_stats['names'].length).fill(0.3);
+            width = Array(abtest_stats['names'].length).fill(0.3);
         }
 
 

@@ -33,6 +33,26 @@
                 {% include 'abtest_token_card.jinja' %}
             </div>
         </div>
+        {% if audio_data[0].tuple.has_reference %}
+            <div class='row mt-2' id="reference-container">
+                <div class='text-center mx-auto'>
+                    <audio id="audio-recording" src={{audio_data[0].reference.url}} type="audio/wav"></audio>
+                    <button type='button' id="play-ref" class='btn btn-success rounded-pill p-3'>
+                        <i id='playButtonIcon_ref' class='fa fa-play'></i> Samanburður
+                    </button>
+                </div>
+            </div>
+        {% else %}
+            <div class='row mt-2' id="reference-container" style="visibility: hidden;">
+                <div class='text-center mx-auto' >
+                    <audio id="audio-recording" type="audio/wav"></audio>
+                    <button type='button' id="play-ref" class='btn btn-success rounded-pill p-3'>
+                        <i id='playButtonIcon_ref' class='fa fa-play'></i> Samanburður
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+
         <div class='row mt-2'>
             <div class='col-6 text-center'>
                 <audio id="audio-recording" src={{audio_data[0].first.url}} type="audio/wav"></audio>
@@ -142,7 +162,9 @@
         let recordingAudio = document.querySelector('audio#audio-recording');
         let playButtonIcon_first = $('#playButtonIcon_first');
         let playButtonIcon_second = $('#playButtonIcon_second');
-
+        let playButtonIcon_ref = $('#playButtonIcon_ref');
+        //other
+        const referenceContainer = $('#reference-container');
 
         const startTime = new Date();
 
@@ -155,7 +177,7 @@
 
         playButtonFirst.on('click', {btn_num: 'first'}, playAction);
         playButtonSecond.on('click', {btn_num: 'second'}, playAction);
-        playButtonRef.on('click', {btn_num: 'ref'}, playAction);
+        playButtonRef.on('click', {btn_num: 'reference'}, playAction);
         finishButton.addEventListener('click', finishAction);
         $(window).keyup(function (e) {
             if (e.key === ' ' || e.key === 'Spacebar'  || e.keyCode === 38 || e.keyCode === 87) {
@@ -246,12 +268,13 @@
             if (btn == 'first'){
                 playButtonIcon_btn = playButtonIcon_first
             }
-            else if(btn = "second"){
+            else if(btn == "second"){
                 playButtonIcon_btn = playButtonIcon_second
             }
-            else if (btn = "ref"){
+            else if (btn == "reference"){
                 playButtonIcon_btn = playButtonIcon_ref
             }
+
             else {
                 return 0
             }
@@ -266,6 +289,7 @@
                     play(id, btn);
                 }
             } else{
+
                 //start
                 //isPlaying = true;
                 currentId = id;
@@ -330,10 +354,19 @@
             setButtonUI();
             setFinishButtonUI();
             setRadioUI();
-
+            setReferenceUI();
             $( "#abtestUI" ).animate({
                 opacity: 1.0
             }, 300);
+        }
+
+        function setReferenceUI(){
+            if(audio_json[abtestIndex]['tuple']['has_ref']){
+                $(referenceContainer).css('visibility','visible')
+            }
+            else{
+                $(referenceContainer).css('visibility','hidden')
+            }
         }
 
         function setProgressUI(i){
@@ -363,12 +396,18 @@
             if(audio_json[abtestIndex]['rating']){
                 labels[audio_json[abtestIndex]['rating']-1].classList.add("active");
             }
-            if(audio_json[abtestIndex]['first']['is_played'] && audio_json[abtestIndex]['second']['is_played']){
-                setRatingsButtonsOn()
+            if(audio_json[abtestIndex]['tuple']['has_ref']){
+                if(audio_json[abtestIndex]['first']['is_played'] && audio_json[abtestIndex]['second']['is_played'] && audio_json[abtestIndex]['reference']['is_played']){
+                    setRatingsButtonsOn()
+                }
             }
             else{
-                //setRatingsButtonsOn()
-                setRatingsButtonsOff()
+                if(audio_json[abtestIndex]['first']['is_played'] && audio_json[abtestIndex]['second']['is_played']){
+                    setRatingsButtonsOn()
+                }
+                else{
+                    setRatingsButtonsOff()
+                }
             }
             /*
             if(abtest_list[abtestIndex]['rating']){

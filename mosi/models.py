@@ -771,7 +771,10 @@ class ABtest(BaseModel, db.Model):
     num_participants = db.Column(db.Integer, default=0)
 
     def getAllRatings(self):
-        ratings = ABRating.query.filter(ABRating.test_id == self.id).all()
+        ratings = []
+        for t in self.ABtest_tuples:
+            for r in t.ratings:
+                ratings.append(r)
         return ratings
 
     def getAllUserRatings(self, user_id):
@@ -804,7 +807,7 @@ class ABtest(BaseModel, db.Model):
 
     def getResultsByVoice(self):
         voice_ratings = defaultdict(list)
-        for obj in self.mos_objects:
+        for obj in self.ABtest_objects:
             for rating in obj.ratings:
                 voice_ratings["No ID" if obj.voice_idx is None else obj.voice_idx].append(rating)
         return voice_ratings
@@ -930,6 +933,8 @@ class ABInstance(BaseModel, db.Model):
                 return r.rating
         return None
 
+
+
     def getAllUsers(self):
         ratings = self.ratings
         user_ids = []
@@ -955,12 +960,46 @@ class ABInstance(BaseModel, db.Model):
         }
 
     @property
+    def ratings(self):
+        ratings = []
+        for i in self.tuple_first:
+            for r in i.ratings:
+                ratings.append(r)
+        for i in self.tuple_second:
+            for r in i.ratings:
+                ratings.append(r)
+        return ratings
+
+    @property
+    def ab_stats(self):
+        picked = 0
+        not_picked = 0
+        no_vote = 0
+        for i in self.tuple_first:
+            for r in i.ratings:
+                if r.rating == 1:
+                    picked += 1
+                else:
+                    not_picked += 1
+        for i in self.tuple_second:
+            for r in i.ratings:
+                if r.rating == 2:
+                    picked += 1
+                else:
+                    not_picked += 1
+        return picked, not_picked
+
+    @property
     def path(self):
         return self.custom_recording.path
 
     @property
     def text(self):
         return self.custom_recording.token.text
+
+    @property
+    def token(self):
+        return self.custom_recording.token
 
     @property
     def ABtest(self):
@@ -1054,6 +1093,17 @@ class ABTuple(BaseModel, db.Model):
     def ajax_edit_action(self):
         return url_for('abtest.abtest_tuple_edit', id=self.id)
 
+    def get_dict(self):
+        return {
+            'id': self.id,
+            'token': self.token.get_dict(),
+            'abtest_id': self.abtest_id,
+            'first_id': self.ab_instance_first_id,
+            'second_id': self.ab_instance_second_id,
+            'ref_id': self.ab_instance_referance_id,
+            'has_ref': self.has_reference,
+        }
+
 
 class ABRating(BaseModel, db.Model):
     __tablename__ = 'ABRating'
@@ -1078,7 +1128,12 @@ class ABRating(BaseModel, db.Model):
         return User.query.get(self.user_id)
 
     @property
+    def ab_tuple(self):
+        return ABTuple.query.get(self.ab_tuple_id)
+
+    @property
     def test_id(self):
-        return self.ab_instance_first.ABtest.id
+        print(self.ab_tuple.abtest_id)
+        return self.ab_tuple.abtest_id
 
 

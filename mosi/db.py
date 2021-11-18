@@ -13,7 +13,7 @@ from collections import defaultdict
 from flask import flash
 from sqlalchemy import func
 from flask_security import current_user
-from mosi.models import (User, db, MosInstance, ABInstance, ABtest, ABRating, CustomRecording,
+from mosi.models import (ABTuple, User, db, MosInstance, ABInstance, ABtest, ABRating, CustomRecording,
                          CustomToken, MosRating)
 
 
@@ -218,13 +218,18 @@ def is_valid_info(data):
 
 
 
-def is_valid_rating(rating):
+def is_valid_MOS_rating(rating):
     if int(rating) > 0 and int(rating) <= 5:
         return True
     return False
 
 
-def delete_rating_if_exists(mos_instance_id, user_id):
+def is_valid_abtest_rating(rating):
+    if int(rating) > 0 and int(rating) <= 2:
+        return True
+    return False
+
+def delete_MOS_rating_if_exists(mos_instance_id, user_id):
     rating = MosRating.query\
         .filter(MosRating.mos_instance_id == mos_instance_id) \
         .filter(MosRating.user_id == user_id).all()
@@ -235,7 +240,6 @@ def delete_rating_if_exists(mos_instance_id, user_id):
     db.session.commit()
     return exists
 
-
 def save_MOS_ratings(form, files):
     user_id = int(form['user_id'])
     mos_id = int(form['mos_id'])
@@ -244,8 +248,8 @@ def save_MOS_ratings(form, files):
         return None
     for i in mos_list:
         if "rating" in i:
-            if is_valid_rating(i['rating']):
-                delete_rating_if_exists(i['id'], user_id)
+            if is_valid_MOS_rating(i['rating']):
+                delete_MOS_rating_if_exists(i['id'], user_id)
                 mos_instance = MosInstance.query.get(i['id'])
                 rating = MosRating()
                 rating.rating = int(i['rating'])
@@ -255,7 +259,35 @@ def save_MOS_ratings(form, files):
     db.session.commit()
     return mos_id
 
+def delete_abtest_rating_if_exists(ab_tuple_id, user_id):
+    rating = ABRating.query\
+        .filter(ABRating.ab_tuple_id== ab_tuple_id) \
+        .filter(ABRating.user_id == user_id).all()
+    exists = False
+    for r in rating:
+        exists = True
+        db.session.delete(r)
+    db.session.commit()
+    return exists
 
+def save_abtest_ratings(form, files):
+    user_id = int(form['user_id'])
+    abtest_id = int(form['abtest_id'])
+    abtest_list = json.loads(form['abtest_list'])
+    if len(abtest_list) == 0:
+        return None
+    for i in abtest_list:
+        if "rating" in i:
+            if is_valid_abtest_rating(i['rating']):
+                delete_abtest_rating_if_exists(i['tuple']['id'], user_id)
+                ab_tuple = ABTuple.query.get(i['tuple']['id'])
+                rating = ABRating()
+                rating.rating = int(i['rating'])
+                rating.user_id = user_id
+                rating.placement = i['placement']
+                ab_tuple.ratings.append(rating)
+    db.session.commit()
+    return abtest_id
 
 def delete_mos_instance_db(instance):
     errors = []
