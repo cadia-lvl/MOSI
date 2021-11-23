@@ -38,16 +38,9 @@ def user_list():
 def user_detail(id):
     page = int(request.args.get('page', 1))
     user = User.query.get(id)
-    recordings = Recording.query.filter(Recording.user_id == id).order_by(
-        resolve_order(
-            Recording,
-            request.args.get('sort_by', default='created_at'),
-            order=request.args.get('order', default='desc')))\
-        .paginate(page, app.config['RECORDING_PAGINATION'])
     return render_template(
         "user.jinja",
         user=user,
-        recordings=recordings,
         section='user')
 
 

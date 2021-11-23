@@ -13,10 +13,13 @@
             Fjöldi einkunna
         </th>
         <th>
-            Meðaleinkunn
+            Valin
         </th>
         <th>
-            Staðalfrávik
+            Ekki valin
+        </th>
+        <th>
+            Hlutfall
         </th>
     </thead>
     <tbody>
@@ -38,8 +41,9 @@
                 <td>
                     {{abtest.number_of_ratings}}
                 </td>
-                <td>{{abtest.average_rating}}</td>
-                <td>{{abtest.std_of_ratings}}</td>
+                <td>{{abtest.picked}}</td>
+                <td>{{abtest.not_picked}}</td>
+                <td>{{abtest.ab_ratio}}</td>
             </tr>
         {% endfor %}
     </tbody>

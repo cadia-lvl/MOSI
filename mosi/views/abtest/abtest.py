@@ -341,11 +341,20 @@ def abtest_results(id):
     abtest_stats = {
         'names': [],
         'means': [],
-        'total_amount': []}
+        'total_amount': [],
+        'picked': [],
+        'not_picked': [],
+        'ratio': [],
+        'ratio_inverse': []}
     for m in abtest_list:
+        ab_picked, ab_not_picked = m.ab_stats
         abtest_stats['names'].append(str(m.id))
         abtest_stats['means'].append(m.average_rating)
         abtest_stats['total_amount'].append(m.number_of_ratings)
+        abtest_stats['picked'].append(ab_picked)
+        abtest_stats['not_picked'].append(ab_not_picked)
+        abtest_stats['ratio'].append(m.ab_ratio)
+        abtest_stats['ratio_inverse'].append(m.ab_ratio_inverse)
     users_list = []
     users_graph_json = []
     for u in users:

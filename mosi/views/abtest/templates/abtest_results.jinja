@@ -88,6 +88,18 @@
     {% endif %}
 
     <div class='col-12' style="margin-top: 50px;">
+        <h3 class='font-weight-bold'>Meðaleinkunn setninga</h3>
+        <p>Hver stöpull sýnir meðaleinkunn ákveðinnar seningar frá öllum notendum</p>
+        <div class='card'>
+            <div class='card-body'>
+                <div id='bar-chart-sentence'>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--
+    <div class='col-12' style="margin-top: 50px;">
         <h3 class='font-weight-bold'>Notendahegðun</h3>
         <p>Hver lína sýnir einkunnagjöf ákveðins notenda fyrir þær upptökur sem sem hlustandi hefur hlýtt á. Hægt er að velja sérstakan notanda til að skoða með meðaltal allra notenda til hliðsjónar. Það er einnig hægt að velja hvaða notendur eru sjáanlegir með því að smella á notendurna hægra megin við grafið.</p>
         <div class='card'>
@@ -159,7 +171,7 @@
             </div>
         </div>
     </div>
-
+    -->
 
 {% endblock %}
 
@@ -185,6 +197,88 @@
                 });
         });
 
+        var trace1 = {
+        x: [20, 14, 23],
+        y: ['giraffes', 'orangutans', 'monkeys'],
+        name: 'SF Zoo',
+        orientation: 'h',
+        marker: {
+            color: 'rgba(55,128,191,0.6)',
+            width: 1
+        },
+        type: 'bar'
+        };
+
+        var trace2 = {
+        x: [12, 18, 29],
+        y: ['giraffes', 'orangutans', 'monkeys'],
+        name: 'LA Zoo',
+        orientation: 'h',
+        type: 'bar',
+        marker: {
+            color: 'rgba(255,153,51,0.6)',
+            width: 1
+        }
+        };
+
+        var data = [trace1, trace2];
+
+        var layout = {
+        title: 'Colored Bar Chart',
+        barmode: 'stack'
+        };
+
+        //Plotly.newPlot('myDiv', data, layout);
+
+
+
+
+
+        var config = {
+            responsive: true
+        }
+        var data = [];
+
+        var users = {{users_graph_json}}
+        var placement = {{placement_info}}
+        var abtest_stats = {{abtest_stats}}
+
+        var container_bar = document.getElementById('bar-chart-sentence');
+
+        var trace1 = {
+            x: abtest_stats['ratio'],
+            y: abtest_stats['names'],
+            name: 'Picked',
+            orientation: 'h',
+            type: 'bar',
+            marker: {
+                color: 'rgba(255,153,51,0.6)',
+                width: 1
+            }
+        };
+
+        var trace2 = {
+            x: abtest_stats['ratio_inverse'],
+            y: abtest_stats['names'],
+            name: 'Not picked',
+            orientation: 'h',
+            type: 'bar',
+            marker: {
+                color: 'rgba(55,128,191,0.6)',
+                width: 1
+            }
+        };
+
+        data = [trace1, trace2]
+        var layout_bar_sentences = {
+            title: 'Colored Bar Chart',
+            barmode: 'stack'
+        };
+
+        Plotly.newPlot(container_bar, data, layout_bar_sentences, config);
+
+
+        /*
         function assignOptions(textArray, selector) {
             for (var i = 0; i < textArray.length;  i++) {
                 var currentOption = document.createElement('option');
@@ -534,6 +628,7 @@
             }
         };
         Plotly.newPlot(container_bar_voices, [voice_trace], layout_bar, config);
+        */
 
     </script>
 {% endblock %}

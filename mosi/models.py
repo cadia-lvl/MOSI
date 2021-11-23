@@ -989,6 +989,32 @@ class ABInstance(BaseModel, db.Model):
                     not_picked += 1
         return picked, not_picked
 
+    
+    @property
+    def picked(self):
+        picked, not_picked = self.ab_stats
+        return picked
+
+    @property
+    def not_picked(self):
+        picked, not_picked = self.ab_stats
+        return not_picked
+
+    @property
+    def ab_ratio(self):
+        picked, not_picked = self.ab_stats
+        if picked + not_picked == 0:
+            return 0
+        return picked / (picked + not_picked)
+    
+    @property
+    def ab_ratio_inverse(self):
+        picked, not_picked = self.ab_stats
+        if picked + not_picked == 0:
+            return 0
+        return 1 - (picked / (picked + not_picked))
+    
+
     @property
     def path(self):
         return self.custom_recording.path
