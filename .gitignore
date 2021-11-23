@@ -16,6 +16,5 @@ tmux_session.sh
 .DS_Store
 .idea/
 
-mosi/settings/my_development.py
 mosi/settings/development.py
 mosi/settings/production.py
