@@ -1,6 +1,11 @@
 env/
 py38/
-data/
+
+#data/
+#*
+#!data*
+#!.gitignore
+
 .tools/
 .settings/
 
