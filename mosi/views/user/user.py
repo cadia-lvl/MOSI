@@ -10,7 +10,7 @@ from sqlalchemy import or_
 
 from mosi.models import User, Role, db
 from mosi.db import resolve_order
-from mosi.forms import (UserEditForm, ExtendedRegisterForm, RoleForm)
+from mosi.forms import (UserEditForm, ExtendedRegisterForm, RoleForm, VerifierRegisterForm)
 
 user = Blueprint(
     'user', __name__, template_folder='templates')
@@ -168,8 +168,7 @@ def verifier_create():
                 uuid=uuid.uuid4(),
                 roles=['Greinir'])
             form.populate_obj(new_user)
-            add_progression_on_user(new_user)
-
+            db.session.commit()
             flash("Nýr greinir var búinn til", category='success')
             return redirect(url_for('user.user_list'))
 

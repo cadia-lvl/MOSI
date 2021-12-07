@@ -11,7 +11,7 @@
                 Texti
             </th>
             <th>
-                Meðaleinkunn
+                Hlutfall valið
             </th>
             <th>
             </th>
@@ -32,7 +32,7 @@
                     {% endif %}
 
                     <td>{{abtest.text}}</td>
-                    <td>{{abtest.average_rating}}</td>
+                    <td>{{(abtest.ab_ratio * 100) | round | int}}% </td>
                     <td>
                         <button id="deleteButton" name="{{abtest.id}}" onClick="deletebutton(name)" class="btn btn-secondary btn-sm text-danger float-right" type="button" data-toggle='modal', data-target='#deleteModal'>
                             {{macros.btn_icon('trash', 'r')}} Eyða

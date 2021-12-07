@@ -14,7 +14,7 @@ from wtforms.validators import InputRequired
 from wtforms_alchemy import ModelForm
 from wtforms_components import IntegerField
 
-from mosi.models import (Configuration, Role, User, Mos, MosInstance, ABtest, ABInstance, ABTuple, db)
+from mosi.models import (Role, User, Mos, MosInstance, ABtest, ABInstance, ABTuple, db)
 
 
 class MultiCheckboxField(SelectMultipleField):
@@ -76,6 +76,12 @@ class ExtendedRegisterForm(RegisterForm):
             validators.required(),
             validators.NumberRange(min=18, max=100)])
     is_admin = BooleanField("Notandi er vefstjóri")
+
+
+class VerifierRegisterForm(RegisterForm):
+    name = TextField(
+        'Nafn',
+        [validators.required()])
 
 
 class UserEditForm(Form):
@@ -366,9 +372,6 @@ ABtestDetailForm = model_form(
         "done_text": {
             "label": "Þakkartexti", "widget": widgets.TextArea()
         },
-        "use_latin_square": {
-            "label": "Nota latin-square"
-        },
         "show_text_in_test": {
             "label": "Sýna texta við hljóðbút"
         },
@@ -402,90 +405,3 @@ class ABtestUploadForm(FlaskForm):
         validators=[
             FileAllowed(['zip'], 'Skrá verður að vera zip mappa'),
             FileRequired('Hladdu upp zip skrá')])
-
-
-
-
-class UploadCollectionForm(FlaskForm):
-    is_g2p = BooleanField(
-        'Staðlað form.',
-        description='Hakið við ef uphleðslan er á stöðluðu' +
-                    ' formi samanber lýsingu hér að ofan',
-        default=False)
-    is_lobe_collection = BooleanField(
-        'LOBE söfnun.',
-        description='Hakið við ef uphleðslan er LOBE söfnun' +
-                    ' á sama formi og LOBE söfnun er hlaðið niður',
-        default=False)
-    name = TextField(
-        'Nafn',
-        validators=[validators.required()])
-    assigned_user_id = QuerySelectField(
-        'Rödd',
-        query_factory=lambda: User.query,
-        get_label='name',
-        allow_blank=True)
-    configuration_id = QuerySelectField(
-        'Stilling',
-        query_factory=lambda: Configuration.query,
-        get_label='printable_name',
-        allow_blank=False)
-    sort_by = SelectField(
-        "Röðun",
-        choices=[
-            ('score', 'Röðunarstuðull'),
-            ('same', 'Sömu röð og í skjali'),
-            ('random', 'Slembiröðun')])
-    is_dev = BooleanField('Tilraunarsöfnun')
-    is_multi_speaker = BooleanField("Margar raddir")
-
-    files = FileField(
-        validators=[
-            FileAllowed(['zip'], 'Skrá verður að vera zip mappa'),
-            FileRequired('Hladdu upp zip skrá')])
-
-    def validate_assigned_user_id(self, field):
-        # HACK to user the QuerySelectField on User objects
-        # but then later populate the field with only the pk.
-        if field.data is not None:
-            field.data = field.data.id
-
-    def validate_configuration_id(self, field):
-        if field.data is not None:
-            field.data = field.data.id
-
-    def validate_is_g2p(self, field):
-        if field.data:
-            if not self.is_lobe_collection.data:
-                return True
-            else:
-                raise ValidationError(
-                    'Velja verður annað hvort staðlað form' +
-                    ' Eða LOBE söfnun')
-        else:
-            if self.is_lobe_collection.data:
-                return True
-            else:
-                raise ValidationError(
-                    'Velja verður annað hvort staðlað form' +
-                    ' Eða LOBE söfnun')
-        raise ValidationError(
-            'Velja verður annað hvort staðlað form EÐA LOBE söfnun')
-
-    def validate_is_lobe_collection(self, field):
-        if field.data:
-            if not self.is_g2p.data:
-                return True
-            else:
-                raise ValidationError(
-                    'Velja verður annað hvort staðlað form' +
-                    'eða LOBE söfnun')
-        else:
-            if self.is_g2p.data:
-                return True
-            else:
-                raise ValidationError(
-                    'Velja verður annað hvort staðlað form' +
-                    'eða LOBE söfnun')
-        raise ValidationError(
-            'Velja verður annað hvort staðlað form EÐA LOBE söfnun')

@@ -3,17 +3,21 @@ LOBE is a recording client made specifically for TTS data collections. It suppor
 
 # Setup
 * Other system requirements (installed via apt):
-    * postgresql
-    * python-psycopg2
-    * libpq-dev
-    * libffi-dev
+    * postgresql: `sudo apt install postgresql postgresql-contrib`
+    * python-psycopg2: `sudo apt-get install -y python3-psycopg2`
+    * libpq-dev: `sudo apt-get install -y libpq-dev`
+    * libffi-dev: `sudo apt-get install -y libffi-dev`
 
+* On ubuntu might have to run `sudo apt-get install python3-dev`
+* cd into MOSI, make a conda python 3.8 venv using `conda create -n mosi python=3.8` 
+* Activate venv using `conda activate mosi`
 * Install Python requirements using `pip3 install -r requirements.txt`
     * ffmpeg (or avconv)
 
 * Create a Postgres database. Relevant parameters need to be supplied to the flask via the setting files at `settings/development.py` or `settings/production.py`.
 * Spin up a simple development server using `./dev.sh`.
     * Use `SEMI_PROD=True` to use `avconc` instead of `ffmpeg`
+
 # Creating a development database
 Start by creating a databese and a user:
 
@@ -21,9 +25,9 @@ Start by creating a databese and a user:
 # Log in as postgres user
 sudo -u postgres -i
 # Create role for lobe and select password
-createuser lobe --pwprompt
-# Create lobe database with the new user as owner
-createdb lobe --owner=lobe
+createuser mosi --pwprompt
+# Create mosi database with the new user as owner
+createdb mosi --owner=lobe
 ```
 Remember to change settings/development.py accordingly. Replace all the values in \<BRACKETS\> with the postgres information you created just now.
 `SQLALCHEMY_DATABASE_URI = 'postgresql://<POSTGRES-USERNAME>:<POSTGRES-PWD>@localhost:5432/<DATABASENAME>'`

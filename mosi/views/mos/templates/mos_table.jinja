@@ -46,8 +46,8 @@
                             <i id='playButtonIcon-{{mos.custom_recording.id}}' class='fa fa-play'></i>
                         </button>
                     </td>
-                    {% if mos.custom_token %}
-                        <td><a href={{mos.custom_token.get_url()}} class='{% if mos.custom_token.marked_as_bad %} text-warning {% endif %}'><code>{{mos.custom_token.get_printable_id()}}</code></a></td>
+                    {% if mos.token %}
+                        <td><a href={{mos.token.get_url()}} class=''><code>{{mos.token.get_printable_id()}}</code></a></td>
                     {% else %}
                         <td>-</td>
                     {% endif %}

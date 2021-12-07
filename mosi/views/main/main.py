@@ -16,7 +16,12 @@ main = Blueprint(
 @main.route('/')
 @login_required
 def index():
-    return redirect(url_for('mos.mos_list'))
+    if current_user.has_role('admin'):
+        return redirect(url_for('mos.mos_list'))
+    elif current_user:
+        return redirect(url_for('user.user_detail', id=current_user.id))
+    else:
+        return redirect( url_for('security.login') )
 
 
 @main.route(f"/{os.getenv('LOBE_REDIRECT','lobe')}/")

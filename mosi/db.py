@@ -27,10 +27,10 @@ def save_custom_wav_for_abtest(zip, zip_name, tsv_name, abtest, id):
         webm_path = app.config["AB_RECORDING_DIR"]+"{}".format(id)
         mc = tsvfile.read()
         c = csv.StringIO(mc.decode())
-        rd = csv.reader(c, delimiter="\t")
+        rd = csv.reader(c, delimiter=";")
         pathlib.Path(wav_path_dir).mkdir(exist_ok=True)
         pathlib.Path(webm_path).mkdir(exist_ok=True)
-        custom_tokens = []
+        uploaded_obj = []
         for row in rd:
             if row[0] and (len(row) == 6 or len(row) == 7):
                 # Validate columns
@@ -97,28 +97,28 @@ def save_custom_wav_for_abtest(zip, zip_name, tsv_name, abtest, id):
                         else:
                             ab_instance.is_synth = False
                         abtest.ABtest_objects.append(ab_instance)
+                        uploaded_obj.append(ab_instance)
         
-        if len(custom_tokens) > 0:
+        if len(uploaded_obj) > 0:
             db.session.commit()
         
-        return custom_tokens
+        return uploaded_obj
 
 
 def save_custom_wav(zip, zip_name, tsv_name, mos, id):
     # Create parent folders if missing (this should probably be done somewhere else)
-    pathlib.Path(app.config["WAV_CUSTOM_AUDIO_DIR"]).mkdir(exist_ok=True)
-    pathlib.Path(app.config["CUSTOM_RECORDING_DIR"]).mkdir(exist_ok=True)
-    pathlib.Path(app.config["CUSTOM_TOKEN_DIR"]).mkdir(exist_ok=True)
+    pathlib.Path(app.config["MOS_AUDIO_DIR"]).mkdir(exist_ok=True)
+    pathlib.Path(app.config["MOS_RECORDING_DIR"]).mkdir(exist_ok=True)
 
     with zip.open(tsv_name) as tsvfile:
-        wav_path_dir = app.config["WAV_CUSTOM_AUDIO_DIR"]+"{}".format(id)
-        webm_path = app.config["CUSTOM_RECORDING_DIR"]+"{}".format(id)
+        wav_path_dir = app.config["MOS_AUDIO_DIR"]+"{}".format(id)
+        webm_path = app.config["MOS_RECORDING_DIR"]+"{}".format(id)
         mc = tsvfile.read()
         c = csv.StringIO(mc.decode())
-        rd = csv.reader(c, delimiter="\t")
+        rd = csv.reader(c, delimiter=";")
         pathlib.Path(wav_path_dir).mkdir(exist_ok=True)
         pathlib.Path(webm_path).mkdir(exist_ok=True)
-        custom_tokens = []
+        uploaded_obj = []
         for row in rd:
             if row[0] and (len(row) == 3 or len(row) == 5 or len(row) == 6):
                 # Validate columns
@@ -134,9 +134,10 @@ def save_custom_wav(zip, zip_name, tsv_name, mos, id):
                     if zip_info.filename == row[0]:
                         custom_token_name = '{}_m{:09d}'.format(
                             zip_name, id)
-                        custom_recording = CustomRecording()
+                        
                         custom_token = CustomToken(
                             row[2], custom_token_name)
+                        custom_recording = CustomRecording(custom_token)
                         if len(row) == 3:
                             mos_instance = MosInstance(
                                 custom_token=custom_token,
@@ -169,10 +170,10 @@ def save_custom_wav(zip, zip_name, tsv_name, mos, id):
                             custom_recording.id, id)
                         fname = secure_filename(f'{file_id}.webm')
                         path = os.path.join(
-                            app.config['CUSTOM_RECORDING_DIR'],
+                            app.config['MOS_RECORDING_DIR'],
                             str(id), fname)
                         wav_path = os.path.join(
-                            app.config['WAV_CUSTOM_AUDIO_DIR'],
+                            app.config['MOS_AUDIO_DIR'],
                             str(id),
                             secure_filename(f'{file_id}.wav'))
                         zip_info.filename = secure_filename(
@@ -191,30 +192,13 @@ def save_custom_wav(zip, zip_name, tsv_name, mos, id):
                         else:
                             mos_instance.is_synth = False
                         mos.mos_objects.append(mos_instance)
-                        custom_tokens.append(custom_token)
+                        uploaded_obj.append(mos_instance)
                 
-        if len(custom_tokens) > 0:
-            custom_token_dir = app.config["CUSTOM_TOKEN_DIR"]+"{}".format(id)
-            pathlib.Path(custom_token_dir).mkdir(exist_ok=True)
-            for token in custom_tokens:
-                token.save_to_disk()
+        if len(uploaded_obj) > 0:
             db.session.commit()
-        return custom_tokens
 
+        return uploaded_obj
 
-def is_valid_info(data):
-    if 'collection_info' in data and \
-            'text_info' in data and \
-            'recording_info' in data and \
-            'other' in data:
-        if 'text' in data['text_info'] and \
-                "session_id" in data["collection_info"] and \
-                "recording_fname" in data["recording_info"] and \
-                "text_marked_bad" in data["other"] and \
-                "recording_marked_bad" in data["other"] and\
-                "duration" in data["recording_info"]:
-            return True
-    return False
 
 
 

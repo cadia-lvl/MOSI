@@ -18,7 +18,7 @@ from mosi.views.main import main
 from mosi.views.token import token
 from mosi.views.recording import recording
 from mosi.views.user import user
-from mosi.views.configuration import configuration
+#from mosi.views.configuration import configuration
 from mosi.views.mos import mos
 from mosi.views.abtest import abtest
 
@@ -52,7 +52,7 @@ def create_app():
     # register blueprints
     app.register_blueprint(main)
     app.register_blueprint(user)
-    app.register_blueprint(configuration)
+    #app.register_blueprint(configuration)
     app.register_blueprint(mos)
     app.register_blueprint(abtest)
 

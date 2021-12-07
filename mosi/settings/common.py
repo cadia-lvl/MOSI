@@ -5,9 +5,6 @@ APP_ROOT = os.path.abspath(os.path.join(
 
 # these should all have a trailing slash
 DATA_BASE_DIR = os.path.join(APP_ROOT, os.pardir, 'data/')
-CUSTOM_TOKEN_DIR = os.path.join(DATA_BASE_DIR, 'custom_tokens/')
-AB_TOKEN_DIR = os.path.join(CUSTOM_TOKEN_DIR, 'abtest/')
-MOS_TOKEN_DIR = os.path.join(CUSTOM_TOKEN_DIR, 'mos/')
 CUSTOM_RECORDING_DIR = os.path.join(DATA_BASE_DIR, 'recordings/')
 AB_RECORDING_DIR = os.path.join(CUSTOM_RECORDING_DIR, 'abtest/')
 MOS_RECORDING_DIR = os.path.join(CUSTOM_RECORDING_DIR, 'mos/')

@@ -22,7 +22,6 @@ from collections import defaultdict
 from mosi import app
 from mosi.models import (User, Role,
                          Configuration, db, MosInstance)
-#from mosi.db import 
 from mosi.tools.analyze import (load_sample, signal_is_too_high,
                                 signal_is_too_low)
 
@@ -46,6 +45,18 @@ class AddDefaultRoles(Command):
                 "name": "Greinir",
                 "description": 'Greinir með takmarkað aðgengi',
             },
+            {
+                "name": "ab_tester",
+                "description": 'Notandi sem tekur AB próf',
+            },
+            {
+                "name": "mos_tester",
+                "description": 'Notandi sem tekur MOS próf',
+            },
+            {
+                "name": "test_partitipant",
+                "description": 'Notandi sem tekur eitthvað próf',
+            },
 
         ]
         existing_roles = [role.name for role in Role.query.all()]
@@ -58,19 +69,6 @@ class AddDefaultRoles(Command):
                 print("Creating role:", r["name"])
 
         db.session.commit()
-
-
-class AddDefaultConfiguration(Command):
-    def run(self):
-        main_conf = Configuration.query.filter_by(name='Aðalstilling').count()
-        if main_conf:
-            print("Configuration already exists.")
-            return
-        conf = Configuration()
-        conf.name = 'Aðalstilling'
-        db.session.add(conf)
-        db.session.commit()
-
 
 class AddUser(Command):
     def run(self):
@@ -148,7 +146,6 @@ manager.add_command('db', MigrateCommand)
 manager.add_command('add_user', AddUser)
 manager.add_command('change_pass', changePass)
 manager.add_command('add_default_roles', AddDefaultRoles)
-manager.add_command('add_default_configuration', AddDefaultConfiguration)
 manager.add_command('add_column_defaults', AddColumnDefaults)
 #manager.add_command('add_mos_dummy_voice_ids', AddVoiceIds)
 

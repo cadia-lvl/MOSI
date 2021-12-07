@@ -197,40 +197,6 @@
                 });
         });
 
-        var trace1 = {
-        x: [20, 14, 23],
-        y: ['giraffes', 'orangutans', 'monkeys'],
-        name: 'SF Zoo',
-        orientation: 'h',
-        marker: {
-            color: 'rgba(55,128,191,0.6)',
-            width: 1
-        },
-        type: 'bar'
-        };
-
-        var trace2 = {
-        x: [12, 18, 29],
-        y: ['giraffes', 'orangutans', 'monkeys'],
-        name: 'LA Zoo',
-        orientation: 'h',
-        type: 'bar',
-        marker: {
-            color: 'rgba(255,153,51,0.6)',
-            width: 1
-        }
-        };
-
-        var data = [trace1, trace2];
-
-        var layout = {
-        title: 'Colored Bar Chart',
-        barmode: 'stack'
-        };
-
-        //Plotly.newPlot('myDiv', data, layout);
-
-
 
 
 
@@ -248,7 +214,7 @@
         var trace1 = {
             x: abtest_stats['ratio'],
             y: abtest_stats['names'],
-            name: 'Picked',
+            name: 'Valið',
             orientation: 'h',
             type: 'bar',
             marker: {
@@ -260,7 +226,7 @@
         var trace2 = {
             x: abtest_stats['ratio_inverse'],
             y: abtest_stats['names'],
-            name: 'Not picked',
+            name: 'Ekki valið',
             orientation: 'h',
             type: 'bar',
             marker: {
@@ -271,7 +237,7 @@
 
         data = [trace1, trace2]
         var layout_bar_sentences = {
-            title: 'Colored Bar Chart',
+            title: 'Setningar',
             barmode: 'stack'
         };
 

@@ -93,7 +93,9 @@ def create_tuple(ab_id, first_id, second_id, ref_id=None):
         flash("Línu var bætt við", category='success')
     else:
         flash("Ekki gekk að bæta við línu", category='warning')
-    return redirect(url_for('abtest.abtest_detail', id=ab_id))
+    response = {}
+    return Response(json.dumps(response), status=200)
+    #return redirect(url_for('abtest.abtest_detail', id=ab_id))
         
 @abtest.route('/abtest/tuple/<int:id>/delete/', methods=['GET'])
 @login_required
@@ -126,7 +128,7 @@ def abtest_detail(id):
                 zip_file = request.files.get('files')
                 with ZipFile(zip_file, 'r') as zip:
                     zip_name = zip_file.filename[:-4]
-                    tsv_name = '{}/index.tsv'.format(zip_name)
+                    tsv_name = '{}/index.csv'.format(zip_name)
                     successfully_uploaded = save_custom_wav_for_abtest(
                         zip, zip_name, tsv_name, abtest, id)
                     if len(successfully_uploaded) > 0:
@@ -206,7 +208,6 @@ def abtest_edit_detail(id):
             db.session.commit()
             return redirect(url_for("abtest.abtest_detail", id=abtest.id))
     
-    form.use_latin_square.data = abtest.use_latin_square
     form.show_text_in_test.data = abtest.show_text_in_test
     return render_template(
         'forms/model.jinja',
@@ -225,14 +226,14 @@ def take_abtest(abtest_uuid):
                 # We don't really want to require email ,
                 # but we have to fake one for the user model
                 user_uuid = uuid.uuid4()
-                email = "{}@lobe.is".format(user_uuid)
+                email = "{}@mosi.is".format(user_uuid)
                 new_user = app.user_datastore.create_user(
                     name=form.data["name"],
                     email=email,
                     password=None,
                     uuid=user_uuid,
                     audio_setup=form.data["audio_setup"],
-                    roles=[]
+                    roles=['ab_tester', 'test_partitipant']
                 )
                 form.populate_obj(new_user)
                 abtest.add_participant(new_user)
@@ -431,11 +432,15 @@ def abtest_results(id):
 def download_abtest_data(id):
     abtest = ABtest.query.get(id)
     response_lines = [
-        "\t".join(map(str, line)) for line in abtest.getResultData()
+        ";".join(map(str, line)) for line in abtest.getResultData()
     ]
-    r = Response(response="\n".join(response_lines), status=200, mimetype="text/plain")
-    r.headers["Content-Type"] = "text/plain; charset=utf-8"
-    return r
+    csv = "\n".join(response_lines)
+    filename = 'abtest_results_{}_{}.csv'.format(abtest.id, time.strftime("%Y-%m-%d-%H-%M-%S"))
+    return Response(
+        csv,
+        mimetype="text/csv",
+        headers={"Content-disposition":
+                 "attachment; filename={}".format(filename)})
 
 
 @abtest.route('/abtest/<int:id>/stream_zip')
@@ -500,7 +505,7 @@ def post_abtest_rating(id):
         flash("Engar einkunnir í MOS prófi.", category='warning')
         return Response(url_for('abtest.abtest_list'), status=200)
 
-    flash("MOS próf klárað", category='success')
+    flash("AB próf klárað", category='success')
     if current_user.is_anonymous:
         return Response(
             url_for('abtest.abtest_done', id=abtest_id), status=200)

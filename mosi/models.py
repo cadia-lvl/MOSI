@@ -46,152 +46,6 @@ class BaseModel(db.Model):
             
 
 
-class Configuration(BaseModel, db.Model):
-    __tablename__ = 'Configuration'
-
-    id = db.Column(
-        db.Integer,
-        primary_key=True,
-        nullable=False,
-        autoincrement=True)
-    name = db.Column(db.String)
-    created_at = db.Column(
-        db.DateTime,
-        default=db.func.current_timestamp())
-    is_default = db.Column(
-        db.Boolean,
-        default=False)
-    # general configuration
-    session_sz = db.Column(
-        db.Integer,
-        default=50)
-    live_transcribe = db.Column(
-        db.Boolean,
-        default=True)
-    visualize_mic = db.Column(
-        db.Boolean,
-        default=True)
-    auto_trim = db.Column(
-        db.Boolean,
-        default=True)
-    analyze_sound = db.Column(
-        db.Boolean,
-        default=True)
-    # recording configuration
-    auto_gain_control = db.Column(
-        db.Boolean,
-        default=False)
-    noise_suppression = db.Column(
-        db.Boolean,
-        default=False)
-    channel_count = db.Column(
-        db.Integer,
-        default=1)
-    sample_rate = db.Column(
-        db.Integer,
-        default=48000)
-    sample_size = db.Column(
-        db.Integer,
-        default=16)
-
-    # MediaRecorder configuration
-    blob_slice = db.Column(
-        db.Integer,
-        default=10)
-    audio_codec = db.Column(
-        db.String,
-        default='pcm')
-
-    # Video configuration
-    video_w = db.Column(
-        db.Integer,
-        default=1280)
-    video_h = db.Column(
-        db.Integer,
-        default=720)
-    video_codec = db.Column(
-        db.String,
-        default='vp8')
-    has_video = db.Column(
-        db.Boolean,
-        default=False)
-
-    # Other
-    trim_threshold = db.Column(
-        db.Float,
-        default=40)
-    too_low_threshold = db.Column(
-        db.Float,
-        default=-15)
-    too_high_threshold = db.Column(
-        db.Float,
-        default=-4.5)
-    too_high_frames = db.Column(
-        db.Integer,
-        default=10)
-
-    @hybrid_property
-    def printable_name(self):
-        if self.name:
-            return self.name
-        else:
-            return "Conf-{:03d}".format(self.id)
-
-    @hybrid_property
-    def url(self):
-        return url_for("configuration.conf_detail", id=self.id)
-
-    @hybrid_property
-    def delete_url(self):
-        return url_for("configuration.delete_conf", id=self.id)
-
-    @hybrid_property
-    def edit_url(self):
-        return url_for("configuration.edit_conf", id=self.id)
-
-    @hybrid_property
-    def codec(self):
-        codec = self.audio_codec
-        if self.has_video:
-            codec = f'{self.video_codec}, {codec}'
-
-    @hybrid_property
-    def media_constraints(self):
-        constraints = {'audio': {
-            'channelCount': self.channel_count,
-            'sampleSize': self.sample_size,
-            'sampleRate': self.sample_rate,
-            'noiseSuppression': self.noise_suppression,
-            'autoGainControl': self.auto_gain_control
-        }}
-        if self.has_video:
-            constraints['video'] = {
-                'width': self.video_w,
-                'height': self.video_h}
-        return constraints
-
-    @hybrid_property
-    def mime_type(self):
-        return f'{"video" if self.has_video else "audio"}/webm; codecs=' +\
-                 f'"{"vp8, " if self.has_video else ""}pcm"'
-
-    @hybrid_property
-    def json(self):
-        return json.dumps({
-            'has_video': self.has_video,
-            'live_transcribe': self.live_transcribe,
-            'visualize_mic': self.visualize_mic,
-            'analyze_sound': self.analyze_sound,
-            'auto_trim': self.auto_trim,
-            'media_constraints': self.media_constraints,
-            'mime_type': self.mime_type,
-            'codec': self.codec,
-            'blob_slice': self.blob_slice,
-            'trim_threshold': self.trim_threshold,
-            'low_threshold': self.too_low_threshold,
-            'high_threshold': self.too_high_threshold,
-            'high_frames': self.too_high_frames})
-
 
 class CustomToken(BaseModel, db.Model):
     __tablename__ = 'CustomToken'
@@ -532,7 +386,7 @@ class Mos(BaseModel, db.Model):
 
     def getResultData(self):
         mos_data = [[
-            "instance",
+            "instance_id",
             "question",
             "utterance_idx",
             "voice_idx",
@@ -548,16 +402,16 @@ class Mos(BaseModel, db.Model):
             for rating in obj.ratings:
                 mos_data.append([
                     obj.id,
-                    obj.question,
-                    obj.utterance_idx,
-                    obj.voice_idx,
+                    obj.question if obj.question else "",
+                    obj.utterance_idx if obj.utterance_idx else "",
+                    obj.voice_idx if obj.voice_idx else "",
                     int(obj.is_synth),
-                    rating.user_id,
-                    rating.user.name,
-                    rating.user.age,
-                    rating.user.audio_setup,
-                    rating.rating,
-                    rating.placement
+                    rating.user_id if  rating.user_id else "",
+                    rating.user.name if rating.user.name else "",
+                    rating.user.age if rating.user.age else "",
+                    rating.user.audio_setup if rating.user.audio_setup else "",
+                    rating.rating if rating.rating else "",
+                    rating.placement if rating.placement else ""
                 ])
         return mos_data
 
@@ -638,11 +492,12 @@ class MosInstance(BaseModel, db.Model):
     selected = db.Column(db.Boolean, default=False, info={
         'label': 'Hafa upptoku'})
 
-    def __init__(self, custom_token, custom_recording, voice_idx=None, utterance_idx=None):
+    def __init__(self, custom_token, custom_recording, voice_idx=None, utterance_idx=None, question=None):
         self.custom_token = custom_token
         self.custom_recording = custom_recording
         self.voice_idx = voice_idx
         self.utterance_idx = utterance_idx
+        self.question = question
 
     def getUserRating(self, user_id):
         for r in self.ratings:
@@ -660,8 +515,8 @@ class MosInstance(BaseModel, db.Model):
 
     def get_dict(self):
         token = None
-        if self.custom_token is not None:
-            token = self.custom_token.get_dict()
+        if self.token is not None:
+            token = self.token.get_dict()
         return {
             'id': self.id,
             'token': token,
@@ -675,12 +530,17 @@ class MosInstance(BaseModel, db.Model):
         }
 
     @property
+    def token(self):
+        return self.custom_recording.token
+
+
+    @property
     def path(self):
         return self.custom_recording.path
 
     @property
     def text(self):
-        return self.custom_token.text
+        return self.token.text
 
     @property
     def mos(self):
@@ -770,6 +630,16 @@ class ABtest(BaseModel, db.Model):
         cascade='all, delete, delete-orphan')
     num_participants = db.Column(db.Integer, default=0)
 
+    def does_tuple_exist(self, first_id, second_id, ref_id=None):
+        for t in self.ABtest_tuples:
+            if not ref_id:
+                if first_id == t.ab_instance_first_id and second_id == t.ab_instance_second_id and t.ab_instance_referance_id == None:
+                    return True
+            else:
+                if first_id == t.ab_instance_first_id and second_id == t.ab_instance_second_id and ref_id == t.ab_instance_referance_id:
+                    return True
+        return False
+
     def getAllRatings(self):
         ratings = []
         for t in self.ABtest_tuples:
@@ -813,8 +683,8 @@ class ABtest(BaseModel, db.Model):
         return voice_ratings
 
     def getResultData(self):
-        mos_data = [[
-            "instance",
+        abtest_data = [[
+            "tuple_id",
             "question",
             "utterance_idx",
             "voice_idx",
@@ -826,22 +696,22 @@ class ABtest(BaseModel, db.Model):
             "rating",
             "placement",
         ]]
-        for obj in self.mos_objects:
+        for obj in self.ABtest_tuples:
             for rating in obj.ratings:
                 mos_data.append([
                     obj.id,
-                    obj.question,
-                    obj.utterance_idx,
-                    obj.voice_idx,
+                    obj.question if obj.question else "",
+                    obj.utterance_idx if obj.utterance_idx else "",
+                    obj.voice_idx if obj.voice_idx else "",
                     int(obj.is_synth),
-                    rating.user_id,
-                    rating.user.name,
-                    rating.user.age,
-                    rating.user.audio_setup,
-                    rating.rating,
-                    rating.placement
+                    rating.user_id if  rating.user_id else "",
+                    rating.user.name if rating.user.name else "",
+                    rating.user.age if rating.user.age else "",
+                    rating.user.audio_setup if rating.user.audio_setup else "",
+                    rating.rating if rating.rating else "",
+                    rating.placement if rating.placement else ""
                 ])
-        return mos_data
+        return abtest_data
 
 
     def getConfigurations(self):

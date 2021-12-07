@@ -1,6 +1,7 @@
 import json
 import traceback
 import random
+import time
 import uuid
 import numpy as np
 from zipfile import ZipFile
@@ -97,7 +98,7 @@ def mos_detail(id):
                 zip_file = request.files.get('files')
                 with ZipFile(zip_file, 'r') as zip:
                     zip_name = zip_file.filename[:-4]
-                    tsv_name = '{}/index.tsv'.format(zip_name)
+                    tsv_name = '{}/index.csv'.format(zip_name)
                     successfully_uploaded = save_custom_wav(
                         zip, zip_name, tsv_name, mos, id)
                     if len(successfully_uploaded) > 0:
@@ -123,7 +124,6 @@ def mos_detail(id):
                 MosInstance,
                 request.args.get('sort_by', default='id'),
                 order=request.args.get('order', default='desc'))).all()
-
     collection = json.dumps({'name': 'Óháð söfnun', 'id': 0})
 
     ground_truths = []
@@ -374,11 +374,15 @@ def mos_results(id):
 def download_mos_data(id):
     mos = Mos.query.get(id)
     response_lines = [
-        "\t".join(map(str, line)) for line in mos.getResultData()
+        ";".join(map(str, line)) for line in mos.getResultData()
     ]
-    r = Response(response="\n".join(response_lines), status=200, mimetype="text/plain")
-    r.headers["Content-Type"] = "text/plain; charset=utf-8"
-    return r
+    csv = "\n".join(response_lines)
+    filename = 'mos_results_{}_{}.csv'.format(mos.id, time.strftime("%Y-%m-%d-%H-%M-%S"))
+    return Response(
+        csv,
+        mimetype="text/csv",
+        headers={"Content-disposition":
+                 "attachment; filename={}".format(filename)})
 
 
 @mos.route('/mos/<int:id>/stream_zip')
