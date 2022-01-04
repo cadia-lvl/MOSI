@@ -2,7 +2,7 @@
     <table class='table'>
         <thead>
             <th>
-                Fjöldi setninga
+                Auðkenni texta
             </th>
             <th>
                 Texti
@@ -21,9 +21,9 @@
                         {{key}}
                     </td>
                     <td>{{value['info']['text']}}</td>
-                    <td>{{value | length}}</td>
+                    <td>{{value['instances'] | length}}</td>
                     <td>
-                        {{value['info']['has_reference']}}
+                        {% if value['info']['has_reference'] == 1%} Já {% else %} Nei {% endif %}
                     </td>
                 </tr>
             {% endfor %}

@@ -34,7 +34,7 @@ def user_list():
 
 @user.route('/users/<int:id>/')
 @login_required
-@roles_accepted('admin', 'Notandi')
+@roles_accepted('admin', 'Notandi', 'test_partitipant')
 def user_detail(id):
     page = int(request.args.get('page', 1))
     user = User.query.get(id)

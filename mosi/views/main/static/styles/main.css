@@ -227,3 +227,9 @@ a{
     background-color:#3E2C41;
     cursor: pointer;
 }
+
+
+.dropdown-menu{
+    max-height: 400px;
+    overflow-y: auto;
+}

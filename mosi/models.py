@@ -287,6 +287,9 @@ class User(db.Model, UserMixin):
         'Role',
         secondary=roles_users,
         backref=db.backref('users', lazy='dynamic'))
+    #db.relationship(
+    #    "ABRating", lazy='joined', backref="User",
+    #    cascade='all, delete, delete-orphan')
 
     def get_url(self):
         return url_for('user.user_detail', id=self.id)
@@ -299,9 +302,6 @@ class User(db.Model, UserMixin):
 
     def is_admin(self):
         return self.has_role(ADMIN_ROLE_NAME)
-
-    def is_verifier(self):
-        return any(r.name == 'Greinir' for r in self.roles)
 
     def __str__(self):
         if type(self.name) != str:
@@ -686,28 +686,44 @@ class ABtest(BaseModel, db.Model):
         abtest_data = [[
             "tuple_id",
             "question",
+            "rating_id",
             "utterance_idx",
-            "voice_idx",
-            "is_synth",
-            "user",
-            "name",
-            "age",
+            "first_clip_id",
+            "first_clip_voice_idx",
+            "first_clip_file_name",
+            "second_clip_id",
+            "second_clip_voice_idx",
+            "second_clip_file_name",
+            "reference_clip_id",
+            "reference_clip_voice_idx",
+            "reference_clip_file_name",
+            "user_id",
+            "user_name",
+            "user_age",
             "audio_setup",
             "rating",
             "placement",
         ]]
         for obj in self.ABtest_tuples:
             for rating in obj.ratings:
-                mos_data.append([
-                    obj.id,
+                abtest_data.append([
+                    obj.id if obj.id else "",
                     obj.question if obj.question else "",
+                    rating.id if rating.id else "",
                     obj.utterance_idx if obj.utterance_idx else "",
-                    obj.voice_idx if obj.voice_idx else "",
-                    int(obj.is_synth),
-                    rating.user_id if  rating.user_id else "",
-                    rating.user.name if rating.user.name else "",
-                    rating.user.age if rating.user.age else "",
-                    rating.user.audio_setup if rating.user.audio_setup else "",
+                    obj.first.id if obj.first.id else "",
+                    obj.first.voice_idx if obj.first.voice_idx else "",
+                    obj.first.custom_recording.original_fname if obj.first.custom_recording.original_fname else "",
+                    obj.second.id if obj.second.id else "",
+                    obj.second.voice_idx if obj.second.voice_idx else "",
+                    obj.second.custom_recording.original_fname if obj.second.custom_recording.original_fname else "",
+                    obj.ref.id if obj.ref and obj.ref.id else "",
+                    obj.ref.voice_idx if obj.ref and obj.ref.voice_idx else "",
+                    obj.ref.custom_recording.original_fname if obj.ref and obj.ref.custom_recording.original_fname else "",
+                    rating.user_id if rating.user_id else "",
+                    rating.user.name if rating.user and rating.user.name else "",
+                    rating.user.age if rating.user and rating.user.age else "",
+                    rating.user.audio_setup if rating.user and rating.user.audio_setup else "",
                     rating.rating if rating.rating else "",
                     rating.placement if rating.placement else ""
                 ])
@@ -786,15 +802,17 @@ class ABInstance(BaseModel, db.Model):
     
     is_reference = db.Column(db.Boolean, default=False)
     is_synth = db.Column(db.Boolean, default=False)
-    voice_idx = db.Column(db.Integer, default=0)
-    utterance_idx = db.Column(db.Integer, default=0)
+    voice_idx = db.Column(db.String(20), default="")
+    utterance_idx = db.Column(db.String(20),default="")
+    model_idx = db.Column(db.String(20), default="")
     question = db.Column(db.Text, default="")
 
-    def __init__(self, custom_recording, voice_idx=None, is_reference=False, utterance_idx=None, question=None):
+    def __init__(self, custom_recording, voice_idx=None, model_idx=None, is_reference=False, utterance_idx=None, question=None):
         self.custom_recording = custom_recording
         self.voice_idx = voice_idx
         self.utterance_idx = utterance_idx
         self.is_reference = is_reference
+        self.model_idx = model_idx
         self.question = question
 
     def getUserRating(self, user_id):
@@ -972,6 +990,14 @@ class ABTuple(BaseModel, db.Model):
             return self.ab_instance_referance
         else:
             return None
+
+    @property
+    def utterance_idx(self):
+        return self.first.utterance_idx
+
+    @property
+    def question(self):
+        return self.first.question
 
     @property
     def token(self):

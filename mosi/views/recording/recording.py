@@ -101,6 +101,7 @@ def toggle_recording_bad_ajax(id):
 def download_recording(id):
     recording = Recording.query.get(id)
     try:
+        return ('', 204)
         return send_from_directory(
             recording.get_directory(), recording.fname,
             as_attachment=True)
@@ -108,6 +109,7 @@ def download_recording(id):
         app.logger.error(
             "Error downloading a recording : {}\n{}".format(
                 error, traceback.format_exc()))
+        return ('', 204)
 
 
 def require_login_if_closed_collection(func):

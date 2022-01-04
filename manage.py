@@ -21,11 +21,11 @@ from collections import defaultdict
 
 from mosi import app
 from mosi.models import (User, Role,
-                         Configuration, db, MosInstance)
+                         db, MosInstance)
 from mosi.tools.analyze import (load_sample, signal_is_too_high,
                                 signal_is_too_low)
 
-migrate = Migrate(app, db)
+migrate = Migrate(app, db, compare_type=True)
 manager = Manager(app)
 
 

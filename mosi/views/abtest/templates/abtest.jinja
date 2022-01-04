@@ -70,14 +70,15 @@
 {% block table %}
     {% if sentence_groups | length > 0%}
         <div>
-            <div>
+            <div data-toggle="collapse" data-target="#collapse-users" aria-expanded="false" aria-controls="collapse-users" style="cursor: pointer;">
                 <h3>Setningar sem til skoðunar</h3>
-                <p>Eitthvað hér....</p>
+                <p>Smelltu til að opna</p>
             </div>
-
-            {% with abtest=abtest, sentence_groups=sentence_groups %}
-                {% include 'abtest_sentence_table.jinja'%}
-            {% endwith %}
+            <div class="collapse" id="collapse-users">
+                {% with abtest=abtest, sentence_groups=sentence_groups %}
+                    {% include 'abtest_sentence_table.jinja'%}
+                {% endwith %}
+            </div>
         </div>
     {% endif %}
 
@@ -86,6 +87,10 @@
             <div>
                 <h3>ABpróf sem til skoðunar</h3>
                 <p>Eitthvað hér....</p>
+                <button class="btn btn-secondary btn-sm mr-2 mb-2" type="button" data-toggle='modal', data-target='#createTupleModal'>
+                    {{macros.btn_icon('plus', 'r')}}
+                    Sjálfval
+                </button>
             </div>
 
             {% with abtest=abtest, abtest_tuples=abtest_tuples, selectAllForm=select_all_forms[0], deselectAllForm=select_all_forms[1] %}
@@ -163,6 +168,60 @@
         </form>
     </div>
 
+    <div class="modal fade" id='createTupleModal' tabindex="-1">
+        <form method='POST' enctype="multipart/form-data">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Búa til setningablöndur fyrir AB próf</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="dropdown my-2">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton-1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Hljóðklippa 1
+                        </button>
+                        <select class="form-select" aria-label="Default select example">
+                            {% for ab in abtest_list %}
+                                <option>{{ab.id}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="dropdown my-2">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton-2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Hljóðklippa 2
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton-2">
+                            {% for ab in abtest_list %}
+                                <a class="dropdown-item" href="#">{{ab.id}}</a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="dropdown my-2">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton-ref" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Samanburðarhljóðklippa
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton-ref">
+                            {% for ab in abtest_list %}
+                                <a class="dropdown-item" href="#">{{ab.id}}</a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                    <button class='btn btn-primary' type='submit'>
+                        Klára
+                        <span class='ml-1'><i class='fa fa-check'></i></span>
+                    </button>
+
+                </div>
+                </div>
+            </div>
+        </form>
+    </div>
 
     {% for key, value in sentence_groups.items() %}
         <div class="modal fade " id='sentenceGroupModal-{{key}}' tabindex="-1">

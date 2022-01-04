@@ -25,8 +25,8 @@
     <div id="abtestUI">
         <div class='row'>
             <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2'>
-                {% if abtest.help_text %}
-                    <p class="pt-2">{{ abtest.help_text }}</p>
+                {% if abtest.question %}
+                    <h4 class="pt-2 text-center mb-5">{{ abtest.question }}</h4>
                 {% endif %}
             </div>
             <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2'>
@@ -68,9 +68,9 @@
             </div>
         </div>
       <div class='my-4'>
-            {% if abtest.question %}
+            {% if abtest.help_text %}
                 <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-4'>
-                    <h3>{{ abtest.question }}</h3>
+                    <h4 class="text-center">{{ abtest.help_text }}</h4>
                 </div> 
             {% endif %}
             <form class="text-center" id="ratingButtons">
@@ -425,17 +425,27 @@
             prevButton.disabled = false;
             nextButton.disabled = false;
             nextButton.style.display = "";
-
+            console.log(audio_json[abtestIndex])
             if (abtestIndex == 0) {
                 prevButton.disabled = true;
             }
-            if (!audio_json[abtestIndex]['first']['is_played'] && !audio_json[abtestIndex]['second']['is_played']) {
-                nextButton.disabled = true;
+            if (audio_json[abtestIndex]['reference']){
+                if(!audio_json[abtestIndex]['first']['is_played'] || !audio_json[abtestIndex]['second']['is_played'] || !audio_json[abtestIndex]['reference']['is_played']){
+                    nextButton.disabled = true;
+                }
             }
+            else{
+                if (!audio_json[abtestIndex]['first']['is_played'] || !audio_json[abtestIndex]['second']['is_played']) {
+                    nextButton.disabled = true;
+                }
+            }
+            
             if (abtestIndex == numABTuples -1) {
                 nextButton.disabled = true;
                 nextButton.style.display = "none"
             }
+
+            
         }
 
         function setFinishButtonUI(){

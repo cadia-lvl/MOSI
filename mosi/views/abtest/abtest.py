@@ -6,7 +6,7 @@ import uuid
 import numpy as np
 from zipfile import ZipFile
 from operator import add, itemgetter
-
+import time
 from flask import (Blueprint, Response, send_from_directory, request,
                    render_template, flash, redirect, url_for)
 from flask import current_app as app
@@ -128,9 +128,9 @@ def abtest_detail(id):
                 zip_file = request.files.get('files')
                 with ZipFile(zip_file, 'r') as zip:
                     zip_name = zip_file.filename[:-4]
-                    tsv_name = '{}/index.csv'.format(zip_name)
+                    csv_name = '{}/index.csv'.format(zip_name)
                     successfully_uploaded = save_custom_wav_for_abtest(
-                        zip, zip_name, tsv_name, abtest, id)
+                        zip, zip_name, csv_name, abtest, id)
                     if len(successfully_uploaded) > 0:
                         flash("Tókst að hlaða upp {} setningum.".format(
                             len(successfully_uploaded)),
@@ -487,6 +487,7 @@ def stream_abtest_index_demo():
         app.logger.error(
             "Error downloading a custom recording : {}\n{}".format(
                 error, traceback.format_exc()))
+        return redirect(request.referrer)
 
 
 @abtest.route('/abtest/post_abtest_rating/<int:id>', methods=['POST'])
@@ -518,7 +519,6 @@ def post_abtest_rating(id):
 @login_required
 @roles_accepted('admin')
 def abtest_tuple_edit(id):
-    print('asdfasdf')
     try:
         tuple = ABTuple.query.get(id)
         form = ABtestItemSelectionForm(request.form, obj=tuple)

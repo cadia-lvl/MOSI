@@ -21,7 +21,7 @@ def save_custom_wav_for_abtest(zip, zip_name, tsv_name, abtest, id):
     # Create parent folders if missing (this should probably be done somewhere else)
     pathlib.Path(app.config["AB_AUDIO_DIR"]).mkdir(exist_ok=True)
     pathlib.Path(app.config["AB_RECORDING_DIR"]).mkdir(exist_ok=True)
-
+    namelist = zip.namelist()
     with zip.open(tsv_name) as tsvfile:
         wav_path_dir = app.config["AB_AUDIO_DIR"]+"{}".format(id)
         webm_path = app.config["AB_RECORDING_DIR"]+"{}".format(id)
@@ -31,59 +31,73 @@ def save_custom_wav_for_abtest(zip, zip_name, tsv_name, abtest, id):
         pathlib.Path(wav_path_dir).mkdir(exist_ok=True)
         pathlib.Path(webm_path).mkdir(exist_ok=True)
         uploaded_obj = []
+        
+        
         for row in rd:
-            if row[0] and (len(row) == 6 or len(row) == 7):
+            zip_info_curr = None
+            if row[0] and (len(row) == 7 or len(row) == 8):
                 # Validate columns
                 if not ((row[1].lower() == 's' or row[1].lower() == 'r') and row[2]):
                     continue
                 if not (row[3] == "1" or row[3] == "0"):
                     continue
-                if len(row) >= 6 and not (row[4] and row[4].isnumeric() and row[5] and row[5].isnumeric()):
+                if len(row) >= 7 and not (row[4] and row[5]):
                     continue
 
-                for zip_info in zip.infolist():
-                    if zip_info.filename[-1] == '/':
-                        continue
-                    zip_info.filename = os.path.basename(zip_info.filename)
-                    if zip_info.filename == row[0]:
-                        custom_token_name = '{}_m{:09d}'.format(
-                            zip_name, id)
-                        custom_token = CustomToken(
-                            row[2], custom_token_name)
-                        custom_recording = CustomRecording(custom_token)
-                        
-                        if len(row) == 6:
-                            ab_instance = ABInstance(
-                                custom_recording=custom_recording,
-                                is_reference=True if row[3] == "1" else False,
-                                voice_idx=row[4],
-                                utterance_idx=row[5])
-                        if len(row) == 7:
-                            ab_instance = ABInstance(
-                                custom_recording=custom_recording,
-                                is_reference=True if row[3] == "1" else False,
-                                voice_idx=row[4],
-                                utterance_idx=row[5],
-                                question=row[6])
-                        db.session.add(custom_token)
-                        db.session.add(custom_recording)
-                        db.session.add(ab_instance)
-                        db.session.flush()
-                        file_id = '{}_s{:09d}_m{:09d}'.format(
-                            os.path.splitext(
-                                os.path.basename(zip_info.filename))[0],
-                            custom_recording.id, id)
-                        fname = secure_filename(f'{file_id}.webm')
-                        path = os.path.join(
-                            app.config['AB_RECORDING_DIR'],
-                            str(id), fname)
-                        wav_path = os.path.join(
-                            app.config['AB_AUDIO_DIR'],
-                            str(id),
-                            secure_filename(f'{file_id}.wav'))
-                        zip_info.filename = secure_filename(
-                            f'{file_id}.wav')
-                        zip.extract(zip_info, wav_path_dir)
+                filepath = namelist[0] + 'audio/' + row[0]
+                if not filepath in namelist:
+                    continue
+                
+                for zipinfo in zip.filelist:
+                    path_file = os.path.abspath(zipinfo.filename)
+                    if path_file.endswith(filepath):
+                        zip_info_curr = zipinfo
+                        break
+                if not zip_info_curr:
+                    continue
+                filename = os.path.basename(filepath)
+                if True:
+                    custom_token_name = '{}_m{:09d}'.format(
+                        zip_name, id)
+                    custom_token = CustomToken(
+                        row[2], custom_token_name)
+                    custom_recording = CustomRecording(custom_token)
+                    
+                    if len(row) == 7:
+                        ab_instance = ABInstance(
+                            custom_recording=custom_recording,
+                            is_reference=True if row[3] == "1" else False,
+                            model_idx=row[4],
+                            utterance_idx=row[5],
+                            voice_idx=row[6])
+                    if len(row) == 8:
+                        ab_instance = ABInstance(
+                            custom_recording=custom_recording,
+                            is_reference=True if row[3] == "1" else False,
+                            model_idx=row[4],
+                            utterance_idx=row[5],
+                            voice_idx=row[6],
+                            question=row[7])
+                    db.session.add(custom_token)
+                    db.session.add(custom_recording)
+                    db.session.add(ab_instance)
+                    db.session.flush()
+                    file_id = '{}_s{:09d}_m{:09d}'.format(
+                        os.path.splitext(
+                            os.path.basename(filename))[0],
+                        custom_recording.id, id)
+                    fname = secure_filename(f'{file_id}.webm')
+                    path = os.path.join(
+                        app.config['AB_RECORDING_DIR'],
+                        str(id), fname)
+                    wav_path = os.path.join(
+                        app.config['AB_AUDIO_DIR'],
+                        str(id),
+                        secure_filename(f'{file_id}.wav'))
+                    zip_info_curr.filename = secure_filename(
+                        f'{file_id}.wav')
+                    zip.extract(zip_info_curr, wav_path_dir)
+                    if(os.path.exists(wav_path)):
                         sound = AudioSegment.from_wav(wav_path)
                         sound.export(path, format="webm")
                         custom_recording.original_fname = row[0]
@@ -98,9 +112,16 @@ def save_custom_wav_for_abtest(zip, zip_name, tsv_name, abtest, id):
                             ab_instance.is_synth = False
                         abtest.ABtest_objects.append(ab_instance)
                         uploaded_obj.append(ab_instance)
+                    else:
+                        print('Not extracted correctly')
+                        db.session.delete(custom_token)
+                        db.session.delete(custom_recording)
+                        db.session.delete(ab_instance)
         
-        if len(uploaded_obj) > 0:
-            db.session.commit()
+                        
+                        
+        
+        db.session.commit()
         
         return uploaded_obj
 
