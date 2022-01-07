@@ -14,7 +14,7 @@ from flask import flash
 from sqlalchemy import func
 from flask_security import current_user
 from mosi.models import (ABTuple, User, db, MosInstance, ABInstance, ABtest, ABRating, CustomRecording,
-                         CustomToken, MosRating)
+                         CustomToken, MosRating, SusObject)
 
 
 def save_custom_wav_for_abtest(zip, zip_name, tsv_name, abtest, id):
@@ -161,7 +161,6 @@ def save_custom_wav(zip, zip_name, tsv_name, mos, id):
                         custom_recording = CustomRecording(custom_token)
                         if len(row) == 3:
                             mos_instance = MosInstance(
-                                custom_token=custom_token,
                                 custom_recording=custom_recording)
                         elif len(row) == 4:
                             mos_instance = MosInstance(
@@ -220,7 +219,124 @@ def save_custom_wav(zip, zip_name, tsv_name, mos, id):
 
         return uploaded_obj
 
+def save_custom_sus_wav(zip, zip_name, tsv_name, sus, id):
+    # Create parent folders if missing (this should probably be done somewhere else)
+    pathlib.Path(app.config["SUS_AUDIO_DIR"]).mkdir(exist_ok=True)
+    pathlib.Path(app.config["SUS_RECORDING_DIR"]).mkdir(exist_ok=True)
+    wav_path_dir = app.config["SUS_AUDIO_DIR"]+"{}".format(id)
+    webm_path = app.config["SUS_RECORDING_DIR"]+"{}".format(id)
+    pathlib.Path(wav_path_dir).mkdir(exist_ok=True)
+    pathlib.Path(webm_path).mkdir(exist_ok=True)
+    uploaded_obj = []
+    if tsv_name in zip.namelist():
+        with zip.open(tsv_name) as tsvfile:
+            mc = tsvfile.read()
+            c = csv.StringIO(mc.decode())
+            rd = csv.reader(c, delimiter=";")
+            for row in rd:
+                if row[0] and len(row) == 2:
+                    for zip_info in zip.infolist():
+                        if zip_info.filename[-1] == '/':
+                            continue
+                        filename, file_extension = os.path.splitext(zip_info.filename)
+                        if not file_extension == '.wav':
+                            continue
+                        zip_info.filename = os.path.basename(zip_info.filename)
+                        if zip_info.filename == row[0]:
+                            custom_token_name = '{}_m{:09d}'.format(
+                                zip_name, id)
+                            
+                            custom_token = CustomToken(
+                                row[1], custom_token_name)
+                            custom_recording = CustomRecording(custom_token)
+                            
+                            sus_object = SusObject(
+                                custom_recording=custom_recording)
+                            db.session.add(custom_token)
+                            db.session.add(custom_recording)
+                            db.session.add(sus_object)
+                            db.session.flush()
+                            file_id = '{}_s{:09d}_m{:09d}'.format(
+                                os.path.splitext(
+                                    os.path.basename(zip_info.filename))[0],
+                                custom_recording.id, id)
+                            fname = secure_filename(f'{file_id}.webm')
+                            path = os.path.join(
+                                app.config['SUS_RECORDING_DIR'],
+                                str(id), fname)
+                            wav_path = os.path.join(
+                                app.config['SUS_AUDIO_DIR'],
+                                str(id),
+                                secure_filename(f'{file_id}.wav'))
+                            zip_info.filename = secure_filename(
+                                f'{file_id}.wav')
+                            zip.extract(zip_info, wav_path_dir)
+                            sound = AudioSegment.from_wav(wav_path)
+                            sound.export(path, format="webm")
+                            custom_recording.original_fname = secure_filename(row[0])
+                            custom_recording.user_id = current_user.id
+                            custom_recording.file_id = file_id
+                            custom_recording.fname = fname
+                            custom_recording.path = path
+                            custom_recording.wav_path = wav_path
+                            if row[1].lower() == 's':
+                                sus_object.is_synth = True
+                            else:
+                                sus_object.is_synth = False
+                            sus.sus_objects.append(sus_object)
+                            uploaded_obj.append(sus_object)
+                            break
+    else:
+        for zip_info in zip.infolist():
+            if zip_info.filename[-1] == '/':
+                continue
+            filename, file_extension = os.path.splitext(zip_info.filename)
+            if not file_extension == '.wav':
+                continue
+            zip_info.filename = os.path.basename(zip_info.filename)
 
+            custom_token_name = '{}_m{:09d}'.format(
+                zip_name, id)
+            
+            custom_token = CustomToken(
+                '', custom_token_name)
+            custom_recording = CustomRecording(custom_token)
+            
+            sus_object = SusObject(
+                custom_recording=custom_recording)
+            db.session.add(custom_token)
+            db.session.add(custom_recording)
+            db.session.add(sus_object)
+            db.session.flush()
+            file_id = '{}_s{:09d}_m{:09d}'.format(
+                os.path.splitext(
+                    os.path.basename(zip_info.filename))[0],
+                custom_recording.id, id)
+            fname = secure_filename(f'{file_id}.webm')
+            path = os.path.join(
+                app.config['SUS_RECORDING_DIR'],
+                str(id), fname)
+            wav_path = os.path.join(
+                app.config['SUS_AUDIO_DIR'],
+                str(id),
+                secure_filename(f'{file_id}.wav'))
+            zip_info.filename = secure_filename(
+                f'{file_id}.wav')
+            zip.extract(zip_info, wav_path_dir)
+            sound = AudioSegment.from_wav(wav_path)
+            sound.export(path, format="webm")
+            custom_recording.original_fname = secure_filename(zip_info.filename)
+            custom_recording.user_id = current_user.id
+            custom_recording.file_id = file_id
+            custom_recording.fname = fname
+            custom_recording.path = path
+            custom_recording.wav_path = wav_path
+            sus.sus_objects.append(sus_object)
+            uploaded_obj.append(sus_object)
+    if len(uploaded_obj) > 0:
+        db.session.commit()
+
+        return uploaded_obj
 
 
 def is_valid_MOS_rating(rating):
@@ -313,6 +429,24 @@ def delete_mos_instance_db(instance):
     return True, errors
 
 def delete_abtest_instance_db(instance):
+    errors = []
+    try:
+        os.remove(instance.custom_token.get_path())
+        os.remove(instance.custom_recording.get_path())
+    except Exception as error:
+        errors.append("Remove from disk error")
+        print(f'{error}\n{traceback.format_exc()}')
+    try:
+        db.session.delete(instance)
+        db.session.commit()
+    except Exception as error:
+        errors.append("Remove from database error")
+        print(f'{error}\n{traceback.format_exc()}')
+    if errors:
+        return False, errors
+    return True, errors
+
+def delete_sus_object_db(instance):
     errors = []
     try:
         os.remove(instance.custom_token.get_path())

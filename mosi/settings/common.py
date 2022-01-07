@@ -8,11 +8,13 @@ DATA_BASE_DIR = os.path.join(APP_ROOT, os.pardir, 'data/')
 CUSTOM_RECORDING_DIR = os.path.join(DATA_BASE_DIR, 'recordings/')
 AB_RECORDING_DIR = os.path.join(CUSTOM_RECORDING_DIR, 'abtest/')
 MOS_RECORDING_DIR = os.path.join(CUSTOM_RECORDING_DIR, 'mos/')
+SUS_RECORDING_DIR = os.path.join(CUSTOM_RECORDING_DIR, 'sus/')
 ZIP_DIR = os.path.join(DATA_BASE_DIR, 'zips/')
 TEMP_DIR = os.path.join(DATA_BASE_DIR, 'temp/')
 WAV_CUSTOM_AUDIO_DIR = os.path.join(DATA_BASE_DIR, 'wav_audio/')
 AB_AUDIO_DIR = os.path.join(WAV_CUSTOM_AUDIO_DIR, 'abtest/')
 MOS_AUDIO_DIR = os.path.join(WAV_CUSTOM_AUDIO_DIR, 'mos/')
+SUS_AUDIO_DIR = os.path.join(WAV_CUSTOM_AUDIO_DIR, 'sus/')
 
 # Path to the logging file
 LOG_PATH = os.path.join(APP_ROOT, os.pardir, 'logs', 'info.log')

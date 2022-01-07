@@ -239,6 +239,7 @@ class CustomRecording(BaseModel, db.Model):
     token = db.relationship("CustomToken", back_populates="recordings")
     mos_instance_id = db.Column(db.Integer, db.ForeignKey("MosInstance.id"))
     AB_instance_id = db.Column(db.Integer, db.ForeignKey("ABInstance.id"))
+    sus_object_id = db.Column(db.Integer, db.ForeignKey("SusObject.id"))
     user_id = db.Column(
         db.Integer,
         db.ForeignKey('user.id', ondelete='SET NULL'),
@@ -1059,3 +1060,138 @@ class ABRating(BaseModel, db.Model):
         return self.ab_tuple.abtest_id
 
 
+class Sus(BaseModel, db.Model):
+    __tablename__ = 'Sus'
+    id = db.Column(
+        db.Integer, primary_key=True, nullable=False, autoincrement=True)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    uuid = db.Column(db.String)
+    question = db.Column(db.String)
+    form_text = db.Column(db.String)
+    help_text = db.Column(db.String)
+    done_text = db.Column(db.String)
+    num_samples = db.Column(db.Integer, default=0, info={
+        'label': 'Fjöldi setninga'
+    })
+    sus_objects = db.relationship(
+        "SusObject", lazy='joined', backref="sus",
+        cascade='all, delete, delete-orphan')
+    num_participants = db.Column(db.Integer, default=0)
+
+    def getAllUsers(self):
+        ratings = self.getAllRatings()
+        user_ids = []
+        for i in ratings:
+            user_ids.append(i.user_id)
+        user_ids = list(set(user_ids))
+        return user_ids
+
+    def getAllVoiceIndices(self):
+        voices = set()
+        for sample in self.sus_objects:
+            voices.add(sample.voice_idx)
+        return voices
+
+    def getAllUtteranceIndices(self):
+        utterances = set()
+        for sample in self.sus_objects:
+            utterances.add(sample.utterance_idx)
+        return utterances
+
+
+    @property
+    def custom_tokens(self):
+        tokens = []
+        for m in self.sus_objects:
+            tokens.append(m.custom_token)
+        return tokens
+
+    @property
+    def url(self):
+        return url_for('sus.sus_detail', id=self.id)
+
+    @property
+    def printable_id(self):
+        return "SUS-{:04d}".format(self.id)
+
+    @property
+    def edit_url(self):
+        return url_for('sus.sus_edit', id=self.id)
+
+    @property
+    def number_selected(self):
+        return sum(r.selected == True for r in self.sus_objects)
+
+    def add_participant(self, user):
+        if not self.num_participants:
+            self.num_participants = 1
+        else:
+            self.num_participants += 1
+
+
+class SusObject(BaseModel, db.Model):
+    __tablename__ = 'SusObject'
+    id = db.Column(
+        db.Integer, primary_key=True, nullable=False, autoincrement=True)
+    sus_id = db.Column(db.Integer, db.ForeignKey('Sus.id'))
+    custom_recording = db.relationship(
+        "CustomRecording", lazy="joined",
+        backref=db.backref("susObject", uselist=False), uselist=False,
+        cascade='all, delete, delete-orphan')
+    is_synth = db.Column(db.Boolean, default=False)
+    voice_idx = db.Column(db.Integer, default=0)
+    utterance_idx = db.Column(db.Integer, default=0)
+    question = db.Column(db.Text, default="")
+    selected = db.Column(db.Boolean, default=False, info={
+        'label': 'Hafa upptoku'})
+
+    def __init__(self, custom_recording, voice_idx=None, utterance_idx=None, question=None):
+        self.custom_recording = custom_recording
+        self.voice_idx = voice_idx
+        self.utterance_idx = utterance_idx
+        self.question = question
+
+    def get_dict(self):
+        token = None
+        if self.token is not None:
+            token = self.token.get_dict()
+        return {
+            'id': self.id,
+            'token': token,
+            'sus_id': self.sus_id,
+            'path': self.path,
+            'text': self.text,
+            'is_synth': self.is_synth,
+            'selected': self.selected,
+            'voice_idx': self.voice_idx,
+            'utterance_idx': self.utterance_idx,
+        }
+
+    @property
+    def token(self):
+        return self.custom_recording.token
+
+
+    @property
+    def path(self):
+        return self.custom_recording.path
+
+    @property
+    def text(self):
+        return self.token.text
+
+    @property
+    def sus(self):
+        return Sus.query.get(self.sus_id)
+
+    @property
+    def get_printable_id(self):
+        return "SUS-Setning {}".format(self.id)
+
+    @property
+    def name(self):
+        return "SUS-Setning {}".format(self.id)
+
+    @property
+    def ajax_edit_action(self):
+        return url_for('sus.sus_instance_edit', id=self.id)

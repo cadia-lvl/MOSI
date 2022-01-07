@@ -14,7 +14,7 @@ from wtforms.validators import InputRequired
 from wtforms_alchemy import ModelForm
 from wtforms_components import IntegerField
 
-from mosi.models import (Role, User, Mos, MosInstance, ABtest, ABInstance, ABTuple, db)
+from mosi.models import (Role, User, Mos, MosInstance, ABtest, ABInstance, ABTuple, db, Sus)
 
 
 class MultiCheckboxField(SelectMultipleField):
@@ -113,102 +113,6 @@ class UserEditForm(Form):
     active = BooleanField("Virkur")
 
 
-
-class ConfigurationForm(Form):
-    name = TextField('Nafn stillinga')
-    session_sz = IntegerField(
-        'Fjöldi setninga í lotu',
-        [
-            validators.required(),
-            validators.NumberRange(min=1, max=100)],
-        default=50)
-    live_transcribe = BooleanField(
-        'Nota talgreini',
-        description="Getur haft áhrif á hljóðgæði")
-    visualize_mic = BooleanField(
-        'Sýna hljóðnemaviðmót',
-        description="Getur haft áhrif á hljóðgæði")
-    analyze_sound = BooleanField("Sjálfvirk gæðastjórnun")
-    auto_trim = BooleanField('Klippa hljóðbrot sjálfkrafa')
-    channel_count = SelectField(
-        "Fjöldi hljóðrása",
-        choices=[(1, "1 rás"), (2, "2 rásir")],
-        coerce=int,
-        description='Athugið að hljóðrásir eru núna alltaf samþjappaðar' +
-                    ' eftir upptökur.')
-    sample_rate = SelectField(
-        "Upptökutíðni",
-        choices=[
-            (16000, "16,000 Hz"),
-            (32000, "32,000 Hz"),
-            (44100, "44,100 Hz"),
-            (48000, "48,000 Hz")],
-        coerce=int)
-    sample_size = SelectField(
-        "Sýnisstærð",
-        choices=[
-            (16, "16 heiltölubitar"),
-            (24, "24 heiltölubitar"),
-            (32, "32 fleytibitar")],
-        coerce=int,
-        description='Ef PCM er valið sem hljóðmerkjamál er' +
-                    'sýnisstærðin 32 bitar sjálfgefið')
-    audio_codec = SelectField(
-        "Hljóðmerkjamál",
-        choices=[("pcm", "PCM")])
-    trim_threshold = FloatField(
-        "lágmarkshljóð (dB)",
-        [validators.NumberRange(min=0)],
-        default=40,
-        description="Þröskuldur sem markar þögn, því lægri því meira telst " +
-                    "sem þögn. Þetta kemur bara af notum þegar sjálfvirk " +
-                    "klipping er notuð. Hljóðrófsritið er desíbel-skalað.")
-    too_low_threshold = FloatField(
-        "Lágmarkshljóð fyrir gæði (dB)",
-        [validators.NumberRange(min=-100, max=0)],
-        default=-15,
-        description="Ef hljóðrófsrit upptöku fer aldrei yfir þennan " +
-                    "þröskuld þá mun gæðastjórnunarkerfi merkja þessa " +
-                    "upptöku of lága. Athugið að hér er hljóðrófsritið " +
-                    "skalað eftir styrk.")
-    too_high_threshold = FloatField(
-        "Hámarkshljóð fyrir gæði (dB)",
-        [validators.NumberRange(min=-100, max=0)],
-        default=-4.5,
-        description="Ef hljóðrófsrit upptöku fer yfir þennan þröskuld " +
-                    "ákveðin fjölda af römmum í röð " +
-                    "þá mun gæðastjórnunarkerfi merkja þessa upptöku of " +
-                    "háa. Athugið að hér er hljóðrófsritið skalað eftir " +
-                    "styrk.")
-    too_high_frames = IntegerField(
-        "Fjöldi of hárra ramma",
-        [validators.NumberRange(min=0, max=100)],
-        default=10,
-        description="Segir til um hversu margir rammar i röð þurfa að " +
-                    "vera fyrir ofan gæðastjórnunarþröskuldinn " +
-                    "til að vera merkt sem of há upptaka.")
-    auto_gain_control = BooleanField(
-        "Sjálfvirk hljóðstýring",
-        description="Getur haft áhrif á hljóðgæði")
-    noise_suppression = BooleanField(
-        "Dempun bakgrunnshljóðs",
-        description="Getur haft áhrif á hljóðgæði")
-    has_video = BooleanField(
-        'Myndbandssöfnun',
-        default=False)
-    video_w = IntegerField(
-        "Vídd myndbands í pixlum",
-        [validators.NumberRange(min=0)],
-        default=1280,
-        description="Einungis notað ef söfnun er myndbandssöfnun.")
-    video_h = IntegerField(
-        "Hæð myndbands í pixlum",
-        [validators.NumberRange(min=0)],
-        default=720,
-        description="Einungis notað ef söfnun er myndbandssöfnun.")
-    video_codec = SelectField(
-        "Myndmerkjamál",
-        choices=[("vp8", "VP8")])
 
 
 RoleForm = model_form(
@@ -380,6 +284,26 @@ ABtestDetailForm = model_form(
           "done_text", "use_latin_square",
           "show_text_in_test"])
 
+SusDetailForm = model_form(
+    Sus,
+    db_session=db.session,
+    field_args={
+        "question": {
+            "label": "Spurning",
+        },
+        "form_text": {
+            "label": "Form texti", "widget": widgets.TextArea()
+        },
+        "help_text": {
+            "label": "Hjálpartexti", "widget": widgets.TextArea()
+        },
+        "done_text": {
+            "label": "Þakkartexti", "widget": widgets.TextArea()
+        },
+    },
+    only=["question", "form_text", "help_text",
+          "done_text", "use_latin_square",
+          "show_text_in_test"])
 
 
 class ABtestTestForm(Form):
@@ -396,6 +320,18 @@ class ABtestItemSelectionForm(ModelForm):
 
 
 class ABtestUploadForm(FlaskForm):
+    is_g2p = BooleanField(
+        'Staðlað form.',
+        description='Hakið við ef skráin er á stöðluðu formi' +
+                    ' samanber lýsingu hér að ofan',
+        default=False)
+    files = FileField(
+        validators=[
+            FileAllowed(['zip'], 'Skrá verður að vera zip mappa'),
+            FileRequired('Hladdu upp zip skrá')])
+
+
+class SusUploadForm(FlaskForm):
     is_g2p = BooleanField(
         'Staðlað form.',
         description='Hakið við ef skráin er á stöðluðu formi' +

@@ -21,6 +21,7 @@ from mosi.views.user import user
 #from mosi.views.configuration import configuration
 from mosi.views.mos import mos
 from mosi.views.abtest import abtest
+from mosi.views.sus import sus
 
 
 
@@ -55,6 +56,7 @@ def create_app():
     #app.register_blueprint(configuration)
     app.register_blueprint(mos)
     app.register_blueprint(abtest)
+    app.register_blueprint(sus)
 
     app.executor = Executor(app)
     app.user_datastore = user_datastore

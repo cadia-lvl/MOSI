@@ -1,5 +1,5 @@
-# L.O.B.E.
-LOBE is a recording client made specifically for TTS data collections. It supports multiple collections, single and multi-speaker, and can prompt sentences based on phonetic coverage.
+# M.O.S.I.
+MOSI is a recording client made specifically for TTS data collections. It supports multiple collections, single and multi-speaker, and can prompt sentences based on phonetic coverage.
 
 # Setup
 * Other system requirements (installed via apt):
@@ -9,8 +9,8 @@ LOBE is a recording client made specifically for TTS data collections. It suppor
     * libffi-dev: `sudo apt-get install -y libffi-dev`
 
 * On ubuntu might have to run `sudo apt-get install python3-dev`
-* cd into MOSI, make a conda python 3.8 venv using `conda create -n mosi python=3.8` 
-* Activate venv using `conda activate mosi`
+* cd into MOSI, make a python virtual environment within the MOSI dir `python3.6 -m venv py36`
+* Activate venv using `source py36/bin/activate`
 * Install Python requirements using `pip3 install -r requirements.txt`
     * ffmpeg (or avconv)
 

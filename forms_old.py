@@ -131,3 +131,9 @@ class _TermsLazyLabel(object):
     """
     def __repr__(self):
         return f'Ég samþykki <a href="{url_for("tos")}" target="_blank">skilmála og gagnastefnu LVL</a>'
+
+
+class SusUploadForm(FlaskForm):
+    is_g2p = BooleanField('Staðlað form.', description='Hakið við ef uphleðslan er á stöðluðu formi samanber lýsingu hér að ofan',
+                          default=False)
+    files = FileField(validators=[FileAllowed(['zip'], 'Skrá verður að vera zip mappa'), FileRequired('Hladdu upp zip skrá')])

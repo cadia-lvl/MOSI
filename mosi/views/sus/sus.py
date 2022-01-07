@@ -13,45 +13,49 @@ from flask import current_app as app
 from flask_security import login_required, roles_accepted, current_user
 from sqlalchemy.exc import IntegrityError
 
-from mosi.models import (Mos, MosInstance, User,
+from mosi.models import (Sus, SusObject, User,
                          CustomToken, CustomRecording, db)
-from mosi.db import (resolve_order, save_custom_wav, save_MOS_ratings,
-                     delete_mos_instance_db)
-from mosi.forms import (MosSelectAllForm, MosUploadForm, MosItemSelectionForm,
-                        MosTestForm, MosForm, MosDetailForm)
+from mosi.db import (resolve_order, save_custom_sus_wav,
+                     delete_sus_object_db)
+#from mosi.forms import (SusSelectAllForm, SusUploadForm, SusItemSelectionForm,
+#                        SusTestForm, SusForm, SusDetailForm)
 
-mos = Blueprint(
-    'mos', __name__, template_folder='templates')
+from mosi.forms import SusUploadForm, SusDetailForm
+
+sus = Blueprint(
+    'sus', __name__, template_folder='templates')
 
 
-@mos.route('/mos/')
+@sus.route('/sus/')
 @login_required
 @roles_accepted('admin')
-def mos_list():
+def sus_list():
     page = int(request.args.get('page', 1))
-    mos_list = Mos.query.order_by(
+    sus_list = Sus.query.order_by(
             resolve_order(
-                Mos,
+                Sus,
                 request.args.get('sort_by', default='created_at'),
                 order=request.args.get('order', default='desc')))\
         .paginate(page, per_page=app.config['MOS_PAGINATION'])
     return render_template(
-        'mos_list.jinja',
-        mos_list=mos_list,
-        section='mos')
+        'sus_list.jinja',
+        sus_list=sus_list,
+        section='sus')
 
-@mos.route('/mos/<int:id>', methods=['GET', 'POST'])
+
+
+@sus.route('/sus/<int:id>', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('admin')
-def mos_detail(id):
-    mos = Mos.query.get(id)
-    form = MosUploadForm()
-    select_all_forms = [
-        MosSelectAllForm(is_synth=True, select=True),
-        MosSelectAllForm(is_synth=True, select=False),
-        MosSelectAllForm(is_synth=False, select=True),
-        MosSelectAllForm(is_synth=False, select=False),
-    ]
+def sus_detail(id):
+    sus = Sus.query.get(id)
+    form = SusUploadForm()
+    #select_all_forms = [
+    #    SusSelectAllForm(is_synth=True, select=True),
+    #    SusSelectAllForm(is_synth=True, select=False),
+    #    SusSelectAllForm(is_synth=False, select=True),
+    #    SusSelectAllForm(is_synth=False, select=False),
+    #]
 
     if request.method == 'POST':
         if form.validate():
@@ -60,9 +64,9 @@ def mos_detail(id):
                 with ZipFile(zip_file, 'r') as zip:
                     zip_name = zip_file.filename[:-4]
                     tsv_name = '{}/index.csv'.format(zip_name)
-                    successfully_uploaded = save_custom_wav(
-                        zip, zip_name, tsv_name, mos, id)
-                    if len(successfully_uploaded) > 0:
+                    successfully_uploaded = save_custom_sus_wav(
+                        zip, zip_name, tsv_name, sus, id)
+                    if successfully_uploaded and len(successfully_uploaded) > 0:
                         flash("Tókst að hlaða upp {} setningum.".format(
                             len(successfully_uploaded)),
                             category="success")
@@ -70,7 +74,7 @@ def mos_detail(id):
                         flash(
                             "Ekki tókst að hlaða upp neinum setningum.",
                             category="warning")
-                return redirect(url_for('mos.mos_detail', id=id))
+                return redirect(url_for('sus.sus_detail', id=id))
             else:
                 flash(
                     "Ekki tókst að hlaða inn skrá. Eingögnu hægt að hlaða inn skrám á stöðluðu formi.",
@@ -80,59 +84,44 @@ def mos_detail(id):
                 "Villa í formi, athugaðu að rétt sé fyllt inn og reyndu aftur.",
                 category="danger")
 
-    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(
+    sus_list = SusObject.query.filter(SusObject.sus_id == id).order_by(
             resolve_order(
-                MosInstance,
+                SusObject,
                 request.args.get('sort_by', default='id'),
                 order=request.args.get('order', default='desc'))).all()
 
-    ground_truths = []
-    synths = []
-    for m in mos_list:
-        m.selection_form = MosItemSelectionForm(obj=m)
-        if m.is_synth:
-            synths.append(m)
-        else:
-            ground_truths.append(m)
-    ratings = mos.getAllRatings()
-
     return render_template(
-        'mos.jinja',
-        mos=mos,
-        mos_list=mos_list,
-        select_all_forms=select_all_forms,
-        ground_truths=ground_truths,
-        synths=synths,
-        mos_form=form,
-        ratings=ratings,
-        section='mos')
+        'sus.jinja',
+        sus=sus,
+        sus_list=sus_list,
+        #select_all_forms=select_all_forms,
+        sus_form=form,
+        section='sus')
 
 
-@mos.route('/mos/<int:id>/edit/detail', methods=['GET', 'POST'])
+@sus.route('/sus/<int:id>/edit/detail', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('admin')
-def mos_edit_detail(id):
-    mos = Mos.query.get(id)
-    form = MosDetailForm(request.form, obj=mos)
+def sus_edit_detail(id):
+    sus = Sus.query.get(id)
+    form = SusDetailForm(request.form, obj=sus)
     if request.method == "POST":
         if form.validate():
-            form.populate_obj(mos)
+            form.populate_obj(sus)
             db.session.commit()
-            return redirect(url_for("mos.mos_detail", id=mos.id))
+            return redirect(url_for("sus.sus_detail", id=sus.id))
     
-    form.use_latin_square.data = mos.use_latin_square
-    form.show_text_in_test.data = mos.show_text_in_test
     return render_template(
         'forms/model.jinja',
         form=form,
         type='edit',
-        action=url_for('mos.mos_edit_detail', id=mos.id))
+        action=url_for('sus.sus_edit_detail', id=sus.id))
 
 
-@mos.route('/mos/take_test/<uuid:mos_uuid>/', methods=['GET', 'POST'])
-def take_mos_test(mos_uuid):
-    mos = Mos.query.filter(Mos.uuid == str(mos_uuid)).first()
-    form = MosTestForm(request.form)
+@sus.route('/sus/take_test/<uuid:sus_uuid>/', methods=['GET', 'POST'])
+def take_sus_test(sus_uuid):
+    sus = Sus.query.filter(Sus.uuid == str(sus_uuid)).first()
+    form = SusTestForm(request.form)
     if request.method == "POST":
         if form.validate():
             try:
@@ -149,7 +138,7 @@ def take_mos_test(mos_uuid):
                     roles=[]
                 )
                 form.populate_obj(new_user)
-                mos.add_participant(new_user)
+                sus.add_participant(new_user)
                 db.session.commit()
             except IntegrityError as e:
                 print(e)
@@ -158,38 +147,30 @@ def take_mos_test(mos_uuid):
                     " email already in use")
                 flash("Þetta netfang er nú þegar í notkun", category='error')
                 return redirect(
-                    url_for("mos.take_mos_test", mos_uuid=mos_uuid))
+                    url_for("sus.take_sus_test", sus_uuid=sus_uuid))
             return redirect(
-                url_for("mos.mos_test", id=mos.id, uuid=new_user.uuid))
+                url_for("sus.sus_test", id=sus.id, uuid=new_user.uuid))
 
     return render_template(
-        'take_mos_test.jinja',
+        'take_sus_test.jinja',
         form=form,
         type='create',
-        mos=mos,
-        action=url_for('mos.take_mos_test', mos_uuid=mos_uuid))
+        sus=sus,
+        action=url_for('sus.take_sus_test', sus_uuid=sus_uuid))
 
 
-@mos.route('/mos/<int:id>/mostest/<string:uuid>', methods=['GET', 'POST'])
-def mos_test(id, uuid):
-    user = User.query.filter(User.uuid == uuid).first()
-    if user.is_admin():
-        if user.id != current_user.id:
-            flash("Þú hefur ekki aðgang að þessari síðu", category='error')
-            return redirect(url_for("mos", id=id))
-    mos = Mos.query.get(id)
-    if mos.use_latin_square:
-        mos_configurations = mos.getConfigurations()
-        mos_list = mos_configurations[(mos.num_participants - 1) % len(mos_configurations)]
-    else:
-        mos_instances = MosInstance.query.filter(MosInstance.mos_id == id, MosInstance.selected == True)
-        mos_list = [instance for instance in mos_instances if instance.path]
-        random.shuffle(mos_list)
+@sus.route('/sus/<int:id>/sustest/', methods=['GET'])
+def sus_test(id):
+   
+    sus = Sus.query.get(id)
+    sus_instances = SusObject.query.filter(SusObject.sus_id == id)
+    sus_list = [instance for instance in sus_instances if instance.path]
+    #random.shuffle(sus_list)
 
     audio = []
     audio_url = []
     info = {'paths': [], 'texts': []}
-    for i in mos_list:
+    for i in sus_list:
         if i.custom_recording:
             audio.append(i.custom_recording)
             audio_url.append(i.custom_recording.get_download_url())
@@ -198,38 +179,37 @@ def mos_test(id, uuid):
         info['paths'].append(i.path)
         info['texts'].append(i.text)
     audio_json = json.dumps([r.get_dict() for r in audio])
-    mos_list_json = json.dumps([r.get_dict() for r in mos_list])
+    sus_list_json = json.dumps([r.get_dict() for r in sus_list])
 
     return render_template(
-        'mos_test.jinja',
-        mos=mos,
-        mos_list=mos_list,
-        user=user,
+        'sus_test.jinja',
+        sus=sus,
+        sus_list=sus_list,
         recordings=audio_json,
         recordings_url=audio_url,
-        json_mos=mos_list_json,
-        section='mos')
+        json_sus=sus_list_json,
+        section='sus')
 
 
-@mos.route('/mos/<int:id>/mos_results', methods=['GET', 'POST'])
+@sus.route('/sus/<int:id>/sus_results', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('admin')
-def mos_results(id):
-    mos = Mos.query.get(id)
-    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(
+def sus_results(id):
+    sus = Sus.query.get(id)
+    sus_list = SusObject.query.filter(SusObject.sus_id == id).order_by(
             resolve_order(
-                MosInstance,
+                SusObject,
                 request.args.get('sort_by', default='id'),
                 order=request.args.get('order', default='desc'))).all()
-    ratings = mos.getAllRatings()
+    ratings = sus.getAllRatings()
     max_placement = 1
     for j in ratings:
         if j.placement > max_placement:
             max_placement = j.placement
 
     if len(ratings) == 0:
-        return redirect(url_for('mos.mos_detail', id=mos.id))
-    user_ids = mos.getAllUsers()
+        return redirect(url_for('sus.sus_detail', id=sus.id))
+    user_ids = sus.getAllUsers()
     users = User.query.filter(User.id.in_(user_ids)).all()
 
     all_rating_stats = []
@@ -245,42 +225,42 @@ def mos_results(id):
             placement[i] = placement[i]/p_counter[i]
     placement_info = {
         'placement': placement,
-        'p_nums': list(range(1, len(mos_list)))}
+        'p_nums': list(range(1, len(sus_list)))}
     rating_json = {
         'average': round(np.mean(all_rating_stats), 2),
         'std': round(np.std(all_rating_stats), 2)}
-    mos_stats = {
+    sus_stats = {
         'names': [],
         'means': [],
         'total_amount': []}
-    for m in mos_list:
-        mos_stats['names'].append(str(m.id))
-        mos_stats['means'].append(m.average_rating)
-        mos_stats['total_amount'].append(m.number_of_ratings)
+    for m in sus_list:
+        sus_stats['names'].append(str(m.id))
+        sus_stats['means'].append(m.average_rating)
+        sus_stats['total_amount'].append(m.number_of_ratings)
     users_list = []
     users_graph_json = []
     for u in users:
-        user_ratings = mos.getAllUserRatings(u.id)
+        user_ratings = sus.getAllUserRatings(u.id)
         ratings_stats = []
         for r in user_ratings:
             ratings_stats.append(r.rating)
         ratings_stats = np.array(ratings_stats)
 
-        mos_ratings_per_user = []
-        for m in mos_list:
+        sus_ratings_per_user = []
+        for m in sus_list:
             if not m.getUserRating(u.id):
-                mos_ratings_per_user.append('')
+                sus_ratings_per_user.append('')
             else:
-                mos_ratings_per_user.append(m.getUserRating(u.id))
+                sus_ratings_per_user.append(m.getUserRating(u.id))
         user_ratings = {
             "username": u.get_printable_name(),
-            "ratings": mos_ratings_per_user}
+            "ratings": sus_ratings_per_user}
         temp = {
             'user': u,
             'mean': round(np.mean(ratings_stats), 2),
             'std': round(np.std(ratings_stats), 2),
             'total': len(ratings_stats),
-            'user_ratings': mos_ratings_per_user}
+            'user_ratings': sus_ratings_per_user}
         temp2 = {
             'user_ratings': user_ratings}
         users_list.append(temp)
@@ -295,11 +275,11 @@ def mos_results(id):
         user_name_dict[u['user_ratings']['username']] = {'fullrating': u['user_ratings']['ratings']}
         indices = [i for i, x in enumerate(u['user_ratings']['ratings']) if x != '']
         user_name_dict[u['user_ratings']['username']]['selectiveRatings'] = [u['user_ratings']['ratings'][i] for i in indices]
-        user_name_dict[u['user_ratings']['username']]['selectiveMosIds'] = [mos_stats['names'][i] for i in indices]
-        user_name_dict[u['user_ratings']['username']]['selectiveMosMeans'] = [mos_stats['means'][i] for i in indices]
+        user_name_dict[u['user_ratings']['username']]['selectiveSusIds'] = [sus_stats['names'][i] for i in indices]
+        user_name_dict[u['user_ratings']['username']]['selectiveSusMeans'] = [sus_stats['means'][i] for i in indices]
 
     # Average per voice index
-    ratings_by_voice = mos.getResultsByVoice()
+    ratings_by_voice = sus.getResultsByVoice()
     per_voice_data = {
         "x": [],
         "y": [],
@@ -311,9 +291,9 @@ def mos_results(id):
         per_voice_data["std"].append(round(np.std([r.rating for r in ratings]), 2))
 
     return render_template(
-        'mos_results.jinja',
-        mos=mos,
-        mos_stats=mos_stats,
+        'sus_results.jinja',
+        sus=sus,
+        sus_stats=sus_stats,
         ratings=ratings,
         placement_info=placement_info,
         all_usernames_list=all_usernames_list,
@@ -322,21 +302,21 @@ def mos_results(id):
         rating_json=rating_json,
         users_graph_json=users_graph_json,
         per_voice_data=per_voice_data,
-        mos_list=mos_list,
-        section='mos'
+        sus_list=sus_list,
+        section='sus'
     )
 
 
-@mos.route('/mos/<int:id>/mos_results/download', methods=['GET'])
+@sus.route('/sus/<int:id>/sus_results/download', methods=['GET'])
 @login_required
 @roles_accepted('admin')
-def download_mos_data(id):
-    mos = Mos.query.get(id)
+def download_sus_data(id):
+    sus = Sus.query.get(id)
     response_lines = [
-        ";".join(map(str, line)) for line in mos.getResultData()
+        ";".join(map(str, line)) for line in sus.getResultData()
     ]
     csv = "\n".join(response_lines)
-    filename = 'mos_results_{}_{}.csv'.format(mos.id, time.strftime("%Y-%m-%d-%H-%M-%S"))
+    filename = 'sus_results_{}_{}.csv'.format(sus.id, time.strftime("%Y-%m-%d-%H-%M-%S"))
     return Response(
         csv,
         mimetype="text/csv",
@@ -344,21 +324,21 @@ def download_mos_data(id):
                  "attachment; filename={}".format(filename)})
 
 
-@mos.route('/mos/<int:id>/stream_zip')
+@sus.route('/sus/<int:id>/stream_zip')
 @login_required
 @roles_accepted('admin')
-def stream_MOS_zip(id):
-    mos = Mos.query.get(id)
-    mos_list = MosInstance.query\
-        .filter(MosInstance.mos_id == id)\
-        .filter(MosInstance.is_synth == False).order_by(
+def stream_SUS_zip(id):
+    sus = Sus.query.get(id)
+    sus_list = SusObject.query\
+        .filter(SusObject.sus_id == id)\
+        .filter(SusObject.is_synth == False).order_by(
             resolve_order(
-                MosInstance,
+                SusObject,
                 request.args.get('sort_by', default='id'),
                 order=request.args.get('order', default='desc'))).all()
 
-    results = 'mos_instance_id\tcustom_token_id\ttoken_text\n'
-    for i in mos_list:
+    results = 'sus_instance_id\tcustom_token_id\ttoken_text\n'
+    for i in sus_list:
         results += "{}\t{}\t{}\n".format(
             str(i.id),
             str(i.custom_token.id),
@@ -372,29 +352,29 @@ def stream_MOS_zip(id):
         headers={
             "Content-Disposition":
             "attachment;filename={}_tokens.txt".format(
-                mos.printable_id)}
+                sus.printable_id)}
         )
 
 
-@mos.route('/mos/stream_mos_demo')
+@sus.route('/sus/stream_sus_demo')
 @login_required
 @roles_accepted('admin')
-def stream_MOS_index_demo():
+def stream_SUS_index_demo():
     other_dir = app.config["OTHER_DIR"]
     try:
         return send_from_directory(
-            other_dir, 'synidaemi_mos.zip', as_attachment=True)
+            other_dir, 'synidaemi_sus_index.zip', as_attachment=True)
     except Exception as error:
         app.logger.error(
             "Error downloading a custom recording : {}\n{}".format(
                 error, traceback.format_exc()))
 
 
-@mos.route('/mos/post_mos_rating/<int:id>', methods=['POST'])
-def post_mos_rating(id):
-    mos_id = id
+@sus.route('/sus/post_sus_rating/<int:id>', methods=['POST'])
+def post_sus_rating(id):
+    sus_id = id
     try:
-        mos_id = save_MOS_ratings(request.form, request.files)
+        sus_id = save_SUS_ratings(request.form, request.files)
     except Exception as error:
         flash(
             "Villa kom upp. Hafið samband við kerfisstjóra",
@@ -402,26 +382,26 @@ def post_mos_rating(id):
         app.logger.error("Error posting recordings: {}\n{}".format(
             error, traceback.format_exc()))
         return Response(str(error), status=500)
-    if mos_id is None:
-        flash("Engar einkunnir í MOS prófi.", category='warning')
-        return Response(url_for('mos.mos_list'), status=200)
+    if sus_id is None:
+        flash("Engar einkunnir í SUS prófi.", category='warning')
+        return Response(url_for('sus.sus_list'), status=200)
 
-    flash("MOS próf klárað", category='success')
+    flash("SUS próf klárað", category='success')
     if current_user.is_anonymous:
         return Response(
-            url_for('mos.mos_done', id=mos_id), status=200)
+            url_for('sus.sus_done', id=sus_id), status=200)
     else:
         return Response(
-            url_for('mos.mos_detail', id=mos_id), status=200)
+            url_for('sus.sus_detail', id=sus_id), status=200)
 
 
-@mos.route('/mos/instances/<int:id>/edit', methods=['POST'])
+@sus.route('/sus/instances/<int:id>/edit', methods=['POST'])
 @login_required
 @roles_accepted('admin')
-def mos_instance_edit(id):
+def sus_instance_edit(id):
     try:
-        instance = MosInstance.query.get(id)
-        form = MosItemSelectionForm(request.form, obj=instance)
+        instance = SusObject.query.get(id)
+        form = SusItemSelectionForm(request.form, obj=instance)
         form.populate_obj(instance)
         db.session.commit()
         response = {}
@@ -434,60 +414,61 @@ def mos_instance_edit(id):
         return Response(errorMessage, status=500)
 
 
-@mos.route('/mos/<int:id>/select_all', methods=['POST'])
+@sus.route('/sus/<int:id>/select_all', methods=['POST'])
 @login_required
 @roles_accepted('admin')
-def mos_select_all(id):
+def sus_select_all(id):
     try:
-        form = MosSelectAllForm(request.form)
+        form = SusSelectAllForm(request.form)
         is_synth = True if form.data['is_synth'] == 'True' else False
         select = True if form.data['select'] == 'True' else False
-        mos_list = MosInstance.query\
-            .filter(MosInstance.mos_id == id)\
-            .filter(MosInstance.is_synth == is_synth).all()
-        for m in mos_list:
+        sus_list = SusObject.query\
+            .filter(SusObject.sus_id == id)\
+            .filter(SusObject.is_synth == is_synth).all()
+        for m in sus_list:
             m.selected = select
         db.session.commit()
-        return redirect(url_for('mos.mos_detail', id=id))
+        return redirect(url_for('sus.sus_detail', id=id))
     except Exception as error:
         print(error)
         flash("Ekki gekk að merkja alla", category='warning')
-    return redirect(url_for('mos.mos_detail', id=id))
+    return redirect(url_for('sus.sus_detail', id=id))
 
 
-@mos.route('/mos/instances/<int:id>/delete/', methods=['GET'])
+@sus.route('/sus/instances/<int:id>/delete/', methods=['GET'])
 @login_required
 @roles_accepted('admin')
-def delete_mos_instance(id):
-    instance = MosInstance.query.get(id)
-    mos_id = instance.mos_id
-    did_delete, errors = delete_mos_instance_db(instance)
+def delete_sus_instance(id):
+    instance = SusObject.query.get(id)
+    sus_id = instance.sus_id
+    did_delete, errors = delete_sus_instance_db(instance)
     if did_delete:
         flash("Línu var eytt", category='success')
     else:
         flash("Ekki gekk að eyða línu rétt", category='warning')
         print(errors)
-    return redirect(url_for('mos.mos_detail', id=mos_id))
+    return redirect(url_for('sus.sus_detail', id=sus_id))
 
 
-@mos.route('/mos/create', methods=['GET', 'POST'])
+@sus.route('/sus/create', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('admin')
-def mos_create():
+def sus_create():
     try:
-        mos = Mos()
-        mos.uuid = uuid.uuid4()
-        db.session.add(mos)
+        sus = Sus()
+        sus.uuid = uuid.uuid4()
+        db.session.add(sus)
         db.session.commit()
-        flash("Nýrri MOS prufu bætt við", category="success")
-        return redirect(url_for('mos.mos_detail', id=mos.id))
+        flash("Nýrri SUS prufu bætt við", category="success")
+        return redirect(url_for('sus.sus_detail', id=sus.id))
     except Exception as error:
-        flash("Error creating MOS.", category="danger")
-        app.logger.error("Error creating MOS {}\n{}".format(
+        flash("Error creating SUS.", category="danger")
+        app.logger.error("Error creating SUS {}\n{}".format(
             error, traceback.format_exc()))
-    return redirect(url_for('mos.mos_list'))
+    return redirect(url_for('sus.sus_list'))
 
-@mos.route('/custom-recording/<int:id>/download/')
+
+@sus.route('/custom-recording/<int:id>/download/')
 def download_custom_recording(id):
     custom_recording = CustomRecording.query.get(id)
     try:
@@ -502,7 +483,7 @@ def download_custom_recording(id):
                 error, traceback.format_exc()))
 
 
-@mos.route('/custom_tokens/<int:id>/')
+@sus.route('/custom_tokens/<int:id>/')
 @login_required
 @roles_accepted('admin', 'Notandi')
 def custom_token(id):
@@ -512,7 +493,7 @@ def custom_token(id):
         section='token')
 
 
-@mos.route('/custom_tokens/<int:id>/download/')
+@sus.route('/custom_tokens/<int:id>/download/')
 @login_required
 @roles_accepted('admin', 'Notandi')
 def download_custom_token(id):
@@ -528,7 +509,7 @@ def download_custom_token(id):
                 error, traceback.format_exc()))
 
 
-@mos.route('/mos-done/<int:id>', methods=['GET'])
-def mos_done(id):
-    mos = Mos.query.get(id)
-    return render_template("mos_done.jinja", mos=mos)
+@sus.route('/sus-done/<int:id>', methods=['GET'])
+def sus_done(id):
+    sus = Sus.query.get(id)
+    return render_template("sus_done.jinja", sus=sus)

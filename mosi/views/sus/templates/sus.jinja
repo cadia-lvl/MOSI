@@ -1,0 +1,229 @@
+{% extends "_list.jinja" %}
+{% block title %}{{sus.printable_id}}{% endblock %}
+{% block total %}{{sus_list|length}}{% endblock %}
+
+{% block header_content %}
+    <div class="float-left text-warning">
+        {% if not sus.number_selected > 0%}
+            {% if sus_list | length == 0%}
+                <span id="additional-info">Hladdu upp setningum til að búa til SUS próf</span>
+            {% else %}
+                <span id="additional-info">Veldu setningar til að nota í prófinu</span>
+            {% endif %}
+        {% else %}
+            <span class='d-none' id="additional-info">Veldu setningar til að nota í prófinu</span>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{%block buttons %}
+    {% if current_user.is_admin() %}
+        <button class="btn btn-secondary btn-sm float-right mr-2 mt-2" type="button" data-toggle='modal', data-target='#uploadSUSModal'>
+            {{macros.btn_icon('upload', 'r')}}
+            Hlaða upp
+        </button>
+        <a href='{{url_for("sus.stream_SUS_zip", id=sus.id)}}' class='btn btn-primary btn-sm float-right mr-2 mt-2'>
+            {{macros.btn_icon('download', 'r')}}
+            Sækja upptökur
+        </a>
+        {% if sus_list | length > 0%}
+            <a class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2' id='start-button' href='{{url_for("sus.sus_test", id=sus.id)}}'>
+                {{macros.btn_icon('play', 'r')}}
+                Hefja SUS próf
+            </a>
+        {% else %}
+            <a disabled class='btn btn-secondary btn-sm text-success float-right mr-2 disabled mt-2' id='start-button' href='{{url_for("sus.sus_test", id=sus.id, uuid=current_user.uuid)}}'>
+                {{macros.btn_icon('play', 'r')}}
+                Hefja SUS próf
+            </a>
+        {% endif %}
+        {% if false%}
+            <a class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2' id='get-link-button' href='{{url_for("sus.take_sus_test", sus_uuid=sus.uuid)}}'>
+                {{macros.btn_icon('link', 'r')}}
+                Hlekkur á próf
+            </a>
+        {% else %}
+            <a disabled class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2 disabled' id='get-link-button' href='{{url_for("sus.take_sus_test", sus_uuid=sus.uuid)}}'>
+                {{macros.btn_icon('link', 'r')}}
+                Hlekkur á próf
+            </a>
+        {% endif %}
+        {% if ratings | length  > 0%}
+            <a class='btn btn-secondary btn-sm text-success float-right mt-2 mr-2' href='{{url_for("sus.sus_results", id=sus.id)}}'>
+                {{macros.btn_icon('chart-bar', 'r')}}
+                Skoða niðurstöður
+            </a>
+        {% else %}
+            <a class='btn btn-secondary btn-sm text-success float-right mt-2 mr-2 disabled' href='{{url_for("sus.sus_results", id=sus.id)}}'>
+                {{macros.btn_icon('chart-bar', 'r')}}
+                Skoða niðurstöður
+            </a>
+        {% endif %}
+        <a class='btn btn-secondary btn-sm text-success float-right mt-2 mr-2' href='{{url_for("sus.sus_edit_detail", id=sus.id)}}'>
+            {{macros.btn_icon('edit', 'r')}}
+            Breyta stillingum
+        </a>
+    {% endif %}
+{% endblock %}
+
+{% block table %}
+    {% if sus_list | length > 0%}
+        <div>
+            <div>
+                <h3>Hljóðklippur sem hlaðið var upp</h3>
+                <p>...</p>
+            </div>
+
+            {% with sus=sus, sus_list=sus_list %}
+                {% include 'sus_table.jinja'%}
+            {% endwith %}
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block no_results %}
+
+    {% if sus_list | length == 0 %}
+        {{macros.no_results("Engar setningar í sus prufu",
+            "Til að sjá setningar þarf fyrst að hlaða þeim upp.")}}
+    {% endif %}
+{% endblock %}
+
+{% block modals %}
+    <div class="modal fade" id='uploadSUSModal' tabindex="-1">
+        <form method='POST' enctype="multipart/form-data">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Hlaða upp talgervingum fyrir SUS próf</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>
+                        Athugaðu að hlaða þarf upp <code>.zip</code> skrá sem inniheldur möppu sem heitir <code>audio</code> svo er mælt með því að hafa skrá sem heitir <code>index.csv</code>.
+                        <code>Audio</code> mappan inniheldur allar talgervingarnar á <code>.wav</code> formi og <code>index.tsv</code> tengir texta hverrar SUS-setningar við nafn
+                        talgervingarinnar í audio möppunni. <br> <br>
+                        Ef þú ákveður að nota <code>index.csv</code> þá skulu vera eftirfarandi dálkar:
+                        <li>(Áskilið) Dálkur 1 er nafn upptöku í <code>audio</code> möppunni.</li>
+                        <li>(Áskilið) Dálkur 2 er er setningin sjálf.</li>
+                        Sé engin <code>index.csv</code> skrá er leitað að hljóðskrám en þær ekki tengdar við neinn texta.
+                        <br>
+                        Sjá sýnidæmi til glöggvunar.
+                    </p>
+                    {% with form=sus_form %}
+                        {% include 'forms/_form.jinja' %}
+                    {% endwith %}
+                </div>
+                <div class="modal-footer">
+                    <a href='{{url_for("sus.stream_SUS_index_demo")}}' class='btn btn-primary float-left mr-2'>
+                        {{macros.btn_icon('download', 'r')}}
+                        Sýnidæmi
+                    </a>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                    <button class='btn btn-primary' type='submit'>
+                        Klára
+                        <span class='ml-1'><i class='fa fa-check'></i></span>
+                    </button>
+
+                </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+     <div class="modal fade" id='deleteModal' tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Þú ert við það að eyða línu!</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    Með því að eyða þessari lotu fremur þú alheimssglæp.
+                </p>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                <a id='confirmationButton' href='{{url_for("sus.delete_sus_instance", id=1)}}' class='btn btn-danger'>
+                    Eyða
+                    {{macros.btn_icon('trash', 'l')}}
+                </a>
+            </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+    {{super()}}
+    <script>
+        function deletebutton(id){
+            $('#deleteModal #confirmationButton').attr('href', '{{url_for("sus.delete_sus_instance", id=1)}}'.replace("1", id));
+        }
+
+
+        $(".sus-check-button").on('change', function(){
+            var id = this.name.split('sus-')[1];
+            updateUI()
+            updateSUS(this)
+        });
+
+
+        function updateUI(){
+            var elements = document.getElementsByClassName("sus-check-button");
+            var ids = []
+            var none_checked = true;
+            for (var i = 0, len = elements.length; i < len; i++) {
+                var array = $( elements[i] ).serializeArray()
+                if (!(array === undefined || array.length == 0)) {
+                    none_checked = false;
+                }
+            }
+            if(none_checked){
+                $("#start-button").addClass( "disabled" );
+                $("#additional-info").removeClass( "d-none" );
+                $("#get-link-button").addClass( "disabled" );
+            }
+            else{
+                $("#start-button").removeClass( "disabled" );
+                $("#additional-info").addClass( "d-none" );
+                $("#get-link-button").removeClass( "disabled" );
+
+            }
+        }
+
+        function updateSUS(form) {
+            //console.log(form)
+            var xhr = new XMLHttpRequest();
+            xhr.onload = function(e) {
+                if(this.readyState === XMLHttpRequest.DONE) {
+                    if(xhr.status == '200'){
+                        var response = JSON.parse(xhr.responseText);
+                        //console.log(response);
+                    } else{
+                        promptError("Villa koma upp:", xhr.responseText, "");
+                    }
+                }
+            }
+            let formData = new FormData(form);
+
+
+            xhr.open("POST", form.action, true);
+            xhr.send(formData);
+        }
+
+        $('#files').on('change',function(){
+            //get the file name
+            var fileName = $(this).val();
+            //replace the "Choose a file" label
+            $(this).next('.custom-file-label').html(fileName);
+        });
+    </script>
+{% endblock %}

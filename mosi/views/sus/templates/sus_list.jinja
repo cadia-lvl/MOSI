@@ -1,0 +1,32 @@
+{% extends "_list.jinja" %}
+{% block title %}SUS prufur{% endblock %}
+{% block total %}{{sus_list.total}}{% endblock %}
+{% block buttons %}
+    {% if current_user.is_admin() %}
+        <a class='btn btn-secondary fourth-bg mr-2 float-right' href='{{url_for("sus.sus_create")}}'>
+            {{macros.btn_icon('plus', 'r')}}
+            Búa til SUS
+        </a>
+    {% endif %}
+{% endblock %}
+{% block table %}
+    {% if sus_list.total > 0 %}
+        {% with sus_list=sus_list.items %}
+            {% include 'sus_all_table.jinja'%}
+        {% endwith %}
+    {% endif %}
+{% endblock %}
+
+{% block pagination %}
+    {% if sus_list.total > 0 %}
+        {{macros.pagination(sus_list, url_for('sus.sus_list'))}}
+    {% endif %}
+{% endblock %}
+
+{% block no_results %}
+    {% if sus_list.total == 0 %}
+        {{macros.no_results("Engar SUS prufur",
+            "Til að sjá SUS prufur þarf fyrst að búa þær til.",
+            url_for('sus.sus_create'), "Búa til SUS prufu")}}
+    {% endif %}
+{% endblock %}

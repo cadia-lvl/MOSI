@@ -1,0 +1,19 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    {% if sus_list | length > 0%}
+        <div>
+            <div>
+                <h3>Hljóðklippur til hlustunar</h3>
+                <p>{{sus.help_text}}</p>
+            </div>
+
+            {% with sus=sus, sus_list=sus_list %}
+                {% include 'sus_test_table.jinja'%}
+            {% endwith %}
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    {{super()}}
+{% endblock %}

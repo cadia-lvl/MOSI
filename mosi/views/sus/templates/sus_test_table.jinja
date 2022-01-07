@@ -1,0 +1,37 @@
+<div class='table-responsive'>
+    <table class='table'>
+        <thead>
+            <th>
+
+            </th>
+            <th>
+                Auðkenni setningar
+            </th>
+            <th>
+                Texti
+            </th>
+        </thead>
+        <tbody>
+            {% for sus in sus_list %}
+                <tr>
+                    <td>
+                        <audio id="audio-{{sus.custom_recording.id}}" src={{sus.custom_recording.get_download_url()}} type="audio/wav"></audio>
+                        <button type='button' class='btn btn-link btn-sm' onClick="play({{sus.custom_recording.id}})">
+                            <i id='playButtonIcon-{{sus.custom_recording.id}}' class='fa fa-play'></i>
+                        </button>
+                    </td>
+                    {% if sus.token %}
+                        <td><a href={{sus.token.get_url()}} class=''><code>{{sus.token.get_printable_id()}}</code></a></td>
+                    {% else %}
+                        <td>-</td>
+                    {% endif %}
+
+                    <td>{{sus.text}}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script src='{{url_for("main.static", filename="js/listControls.js")}}'></script>
+
