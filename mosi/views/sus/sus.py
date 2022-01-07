@@ -441,7 +441,7 @@ def sus_select_all(id):
 def delete_sus_instance(id):
     instance = SusObject.query.get(id)
     sus_id = instance.sus_id
-    did_delete, errors = delete_sus_instance_db(instance)
+    did_delete, errors = delete_sus_object_db(instance)
     if did_delete:
         flash("Línu var eytt", category='success')
     else:
