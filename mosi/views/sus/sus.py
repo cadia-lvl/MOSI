@@ -159,11 +159,11 @@ def take_sus_test(sus_uuid):
         action=url_for('sus.take_sus_test', sus_uuid=sus_uuid))
 
 
-@sus.route('/sus/<int:id>/sustest/', methods=['GET'])
-def sus_test(id):
+@sus.route('/sus/sustest/<uuid:sus_uuid>/', methods=['GET'])
+def sus_test(sus_uuid):
    
-    sus = Sus.query.get(id)
-    sus_instances = SusObject.query.filter(SusObject.sus_id == id)
+    sus = Sus.query.filter(Sus.uuid == str(sus_uuid)).first()
+    sus_instances = SusObject.query.filter(SusObject.sus_id == sus.id)
     sus_list = [instance for instance in sus_instances if instance.path]
     #random.shuffle(sus_list)
 

@@ -27,12 +27,12 @@
             Sækja upptökur
         </a>
         {% if sus_list | length > 0%}
-            <a class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2' id='start-button' href='{{url_for("sus.sus_test", id=sus.id)}}'>
+            <a class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2' id='start-button' href='{{url_for("sus.sus_test", sus_uuid=sus.uuid)}}'>
                 {{macros.btn_icon('play', 'r')}}
                 Hefja SUS próf
             </a>
         {% else %}
-            <a disabled class='btn btn-secondary btn-sm text-success float-right mr-2 disabled mt-2' id='start-button' href='{{url_for("sus.sus_test", id=sus.id, uuid=current_user.uuid)}}'>
+            <a disabled class='btn btn-secondary btn-sm text-success float-right mr-2 disabled mt-2' id='start-button' href='{{url_for("sus.sus_test", sus_uuid=sus.uuid, uuid=current_user.uuid)}}'>
                 {{macros.btn_icon('play', 'r')}}
                 Hefja SUS próf
             </a>
