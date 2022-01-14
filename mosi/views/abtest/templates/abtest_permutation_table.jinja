@@ -27,7 +27,7 @@
                     <td rel="tooltip" title="Model: {{data['instances'][p[1]].model_idx}} &#013;Voice: {{data['instances'][p[1]].voice_idx}}  &#013;Ground truth: {{data['instances'][p[1]].is_reference}}">
                         {{data['instances'][p[1]].get_printable_id}}
                         <audio preload="none" id="audio-{{data['instances'][p[1]].custom_recording.id}}" src="{{data['instances'][p[1]].custom_recording.get_download_url()}}" type="audio/wav"></audio>
-                        <button type='button' class='btn btn-link btn-sm' onClick="play({{data['instances'][p[1]].custom_recording.id, '#playButtonIcon-permutationTable-'}})">
+                        <button type='button' class='btn btn-link btn-sm' onClick="play({{data['instances'][p[1]].custom_recording.id}}, '#playButtonIcon-permutationTable-')">
                             <i id='playButtonIcon-permutationTable-{{data["instances"][p[1]].custom_recording.id}}' class='fa fa-play'></i>
                         </button>
                     </td>
