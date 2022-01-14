@@ -276,12 +276,16 @@ ABtestDetailForm = model_form(
         "done_text": {
             "label": "Þakkartexti", "widget": widgets.TextArea()
         },
+        "num_listening_samples_per_test": {
+            "label": "Hámark setninga sem þáttakendur hlusta á", "widget": widgets.html5.NumberInput(step=None, min=1, max=1000)
+        },
         "show_text_in_test": {
             "label": "Sýna texta við hljóðbút"
         },
+
     },
     only=["question", "form_text", "help_text",
-          "done_text", "use_latin_square",
+          "done_text", "use_latin_square", "num_listening_samples_per_test",
           "show_text_in_test"])
 
 SusDetailForm = model_form(

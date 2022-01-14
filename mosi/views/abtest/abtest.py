@@ -266,10 +266,14 @@ def abtest_test(id, uuid):
             return redirect(url_for("abtest", id=id))
     abtest = ABtest.query.get(id)
     abtest_tuples = ABTuple.query.filter(ABTuple.abtest_id == id, ABTuple.selected == True)
-    abtest_list = [tuple for tuple in abtest_tuples if tuple.first.path and tuple.second.path]
-    random.shuffle(abtest_list)
+    abtest_list_all = [tuple for tuple in abtest_tuples if tuple.first.path and tuple.second.path]
+    num_samples = min(abtest.num_listening_samples_per_test, len(abtest_list_all), abtest.num_unique_utterances)
 
+    full_sorted_list = sorted(abtest_list_all, key=lambda x: x.num_ratings)
     
+    abtest_list = full_sorted_list[:num_samples]
+
+    random.shuffle(abtest_list)
     audio_data = []
     json_list = []
     for i in abtest_list:
@@ -289,7 +293,7 @@ def abtest_test(id, uuid):
         json_list.append(json_list_el)
         
     audio_json = json.dumps(json_list)
-
+    invert_A_B_arrangement = bool(random.getrandbits(1))
     
     return render_template(
         'abtest_test.jinja',
@@ -298,6 +302,7 @@ def abtest_test(id, uuid):
         user=user,
         audio_data=audio_data,
         audio_json=audio_json,
+        invert_A_B_arrangement=invert_A_B_arrangement,
         section='abtest')
 
 

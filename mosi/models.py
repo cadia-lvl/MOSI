@@ -619,6 +619,7 @@ class ABtest(BaseModel, db.Model):
     form_text = db.Column(db.String)
     help_text = db.Column(db.String)
     done_text = db.Column(db.String)
+    num_listening_samples_per_test = db.Column(db.Integer, default=15)
     show_text_in_test = db.Column(db.Boolean, default=True)
     num_samples = db.Column(db.Integer, default=0, info={
         'label': 'Fjöldi setninga'
@@ -780,6 +781,19 @@ class ABtest(BaseModel, db.Model):
     @property
     def number_selected(self):
         return sum(r.selected == True for r in self.ABtest_tuples)
+
+    @property
+    def list_unique_utterances(self):
+        utts = set()
+        for i in self.ABtest_objects:
+            utts.add(i.utterance_idx)
+        return list(utts)
+
+    @property
+    def num_unique_utterances(self):
+        return len(self.list_unique_utterances)
+
+        
 
     def add_participant(self, user):
         if not self.num_participants:
@@ -976,6 +990,11 @@ class ABTuple(BaseModel, db.Model):
         self.ab_instance_first_id = ab_instance_first_id
         self.ab_instance_second_id = ab_instance_second_id
         self.ab_instance_referance_id = ab_instance_referance_id
+
+
+    @property
+    def num_ratings(self):
+        return len(self.ratings)
 
     @property
     def first(self):

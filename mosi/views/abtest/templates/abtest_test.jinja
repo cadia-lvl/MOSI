@@ -52,21 +52,39 @@
                 </div>
             </div>
         {% endif %}
+        {% if not invert_A_B_arrangement%}
+            <div class='row mt-2'>
+                <div class='col-6 text-center'>
+                    <audio id="audio-recording" src={{audio_data[0].first.url}} type="audio/wav"></audio>
+                    <button type='button' id="play-first" class='btn btn-success rounded-pill p-3'>
+                        <i id='playButtonIcon_first' class='fa fa-play'></i> A
+                    </button>
+                </div>
+                <div class='col-6 text-center'>
+                    <audio id="audio-recording" src={{audio_data[0].second.url}} type="audio/wav"></audio>
+                    <button type='button' id="play-second" class='btn btn-success rounded-pill p-3'>
+                        <i id='playButtonIcon_second' class='fa fa-play'></i> B
+                    </button>
+                </div>
+            </div>
+        {% else %}
+            <div class='row mt-2'>
+                <div class='col-6 text-center'>
+                    <audio id="audio-recording" src={{audio_data[0].second.url}} type="audio/wav"></audio>
+                    <button type='button' id="play-second" class='btn btn-success rounded-pill p-3'>
+                        <i id='playButtonIcon_second' class='fa fa-play'></i> A
+                    </button>
+                </div>
+                <div class='col-6 text-center'>
+                    <audio id="audio-recording" src={{audio_data[0].first.url}} type="audio/wav"></audio>
+                    <button type='button' id="play-first" class='btn btn-success rounded-pill p-3'>
+                        <i id='playButtonIcon_first' class='fa fa-play'></i> B
+                    </button>
+                </div>
+                
+            </div>
+        {% endif %}
 
-        <div class='row mt-2'>
-            <div class='col-6 text-center'>
-                <audio id="audio-recording" src={{audio_data[0].first.url}} type="audio/wav"></audio>
-                <button type='button' id="play-first" class='btn btn-success rounded-pill p-3'>
-                    <i id='playButtonIcon_first' class='fa fa-play'></i> A
-                </button>
-            </div>
-            <div class='col-6 text-center'>
-                <audio id="audio-recording" src={{audio_data[0].second.url}} type="audio/wav"></audio>
-                <button type='button' id="play-second" class='btn btn-success rounded-pill p-3'>
-                    <i id='playButtonIcon_second' class='fa fa-play'></i> B
-                </button>
-            </div>
-        </div>
       <div class='my-4'>
             {% if abtest.help_text %}
                 <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-4'>
