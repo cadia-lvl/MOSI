@@ -20,9 +20,9 @@
             {% for abtest in abtest_list %}
                 <tr>
                     <td>
-                        <audio id="audio-{{abtest.custom_recording.id}}" src={{abtest.custom_recording.get_download_url()}} type="audio/wav"></audio>
-                        <button type='button' class='btn btn-link btn-sm' onClick="play({{abtest.custom_recording.id}})">
-                            <i id='playButtonIcon-{{abtest.custom_recording.id}}' class='fa fa-play'></i>
+                        <audio preload="none" id="audio-{{abtest.custom_recording.id}}" src={{abtest.custom_recording.get_download_url()}} type="audio/wav"></audio>
+                        <button type='button' class='btn btn-link btn-sm' onClick="play({{abtest.custom_recording.id}}, '#playButtonIcon-allAB-')">
+                            <i id='playButtonIcon-allAB-{{abtest.custom_recording.id}}' class='fa fa-play'></i>
                         </button>
                     </td>
                     {% if abtest.custom_recording %}

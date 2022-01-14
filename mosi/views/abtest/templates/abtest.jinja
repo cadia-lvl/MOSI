@@ -73,6 +73,7 @@
             <div data-toggle="collapse" data-target="#collapse-users" aria-expanded="false" aria-controls="collapse-users" style="cursor: pointer;">
                 <h3>Setningar sem til skoðunar</h3>
                 <p>Smelltu til að opna</p>
+                <p>{{ sentence_groups|length }} setningar</p>
             </div>
             <div class="collapse" id="collapse-users">
                 {% with abtest=abtest, sentence_groups=sentence_groups %}
@@ -86,7 +87,8 @@
         <div>
             <div>
                 <h3>ABpróf sem til skoðunar</h3>
-                <p>Eitthvað hér....</p>
+                <p>Fjöldi samanburða í boði: {{abtest_tuples|length }}</p>
+                <p>Fjöldi samanburða valinn: {{n_tuples_selected}}</p>
                 <button class="btn btn-secondary btn-sm mr-2 mb-2" type="button" data-toggle='modal', data-target='#createTupleModal'>
                     {{macros.btn_icon('plus', 'r')}}
                     Sjálfval
@@ -103,7 +105,7 @@
         <div>
             <div>
                 <h3>Allar hljóðklippur</h3>
-                <p>Eitthvað hér....</p>
+                <p>Fjöldi hljóðklippa: {{abtest_list | length}}</p>
             </div>
 
             {% with abtest=abtest, abtest_list=abtest_list %}
@@ -412,5 +414,40 @@
             //replace the "Choose a file" label
             $(this).next('.custom-file-label').html(fileName);
         });
+
+        function play(id, playAudioTag = '#playButtonIcon-'){
+            console.log('asdfsadfasdf')
+            playButtonIcon = $(playAudioTag+id);
+            audio = document.getElementById('audio-'+id);
+            if(isPlaying){
+                //stop
+                isPlaying = false;
+                playButtonIcon.removeClass('fa-stop').addClass('fa-play');
+                audio.pause();
+                audio.currentTime = 0;
+                // play the other clip if another id was chosen
+                if(id !== currentId){
+                    play(id);
+                }
+            } else{
+                //start
+                //isPlaying = true;
+                currentId = id;
+                
+                // set listeners
+                audio.onplaying = function(){
+                    isPlaying = true;
+                }
+                audio.onpause = function(){
+                    isPlaying = false;
+                }
+                audio.onended = function(){
+                    playButtonIcon.removeClass('fa-stop').addClass('fa-play');
+                }
+                // play audio
+                playButtonIcon.removeClass('fa-play').addClass('fa-stop');
+                audio.play();
+            }
+        }
     </script>
 {% endblock %}

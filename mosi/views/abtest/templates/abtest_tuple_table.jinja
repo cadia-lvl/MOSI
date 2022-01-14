@@ -39,16 +39,16 @@
                 <tr>
                     <td >
                         {{t.first.get_printable_id}}
-                        <audio id='audio-{{t.first.custom_recording.id}}' src="{{t.first.custom_recording.get_download_url()}}" type="audio/wav"></audio>
-                        <button type='button' class='btn btn-link btn-sm' onClick="play({{t.first.custom_recording.id}})">
-                            <i id='playButtonIcon-{{t.first.custom_recording.id}}' class='fa fa-play'></i>
+                        <audio preload="none" id='audio-{{t.first.custom_recording.id}}' src="{{t.first.custom_recording.get_download_url()}}" type="audio/wav"></audio>
+                        <button type='button' class='btn btn-link btn-sm' onClick="play({{t.first.custom_recording.id}}, '#playButtonIcon-tupleTable-')">
+                            <i id='playButtonIcon-tupleTable-{{t.first.custom_recording.id}}' class='fa fa-play'></i>
                         </button>
                     </td>
                     <td>
                         {{t.second.get_printable_id}}
-                        <audio id="audio-{{t.second.custom_recording.id}}" src="{{t.second.custom_recording.get_download_url()}}" type="audio/wav"></audio>
-                        <button type='button' class='btn btn-link btn-sm' onClick="play({{t.second.custom_recording.id}})">
-                            <i id='playButtonIcon-{{t.second.custom_recording.id}}' class='fa fa-play'></i>
+                        <audio preload="none" id="audio-{{t.second.custom_recording.id}}" src="{{t.second.custom_recording.get_download_url()}}" type="audio/wav"></audio>
+                        <button type='button' class='btn btn-link btn-sm' onClick="play({{t.second.custom_recording.id}}, '#playButtonIcon-tupleTable-')">
+                            <i id='playButtonIcon-tupleTable-{{t.second.custom_recording.id}}' class='fa fa-play'></i>
                         </button>
                     </td>
                     <td>
@@ -56,9 +56,9 @@
 
                         {% else %}
                             {{t.ref.get_printable_id}}
-                            <audio id="audio-{{t.ref.custom_recording.id}}" src="{{t.ref.custom_recording.get_download_url()}}" type="audio/wav"></audio>
-                            <button type='button' class='btn btn-link btn-sm' onClick="play({{t.ref.custom_recording.id}})">
-                                <i id='playButtonIcon-{{t.ref.custom_recording.id}}' class='fa fa-play'></i>
+                            <audio preload="none" id="audio-{{t.ref.custom_recording.id}}" src="{{t.ref.custom_recording.get_download_url()}}" type="audio/wav"></audio>
+                            <button type='button' class='btn btn-link btn-sm' onClick="play({{t.ref.custom_recording.id}}, '#playButtonIcon-tupleTable-')">
+                                <i id='playButtonIcon-tupleTable-{{t.ref.custom_recording.id}}' class='fa fa-play'></i>
                             </button>
                         {% endif %}
                     </td>

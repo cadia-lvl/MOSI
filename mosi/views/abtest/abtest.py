@@ -180,9 +180,11 @@ def abtest_detail(id):
         sentence_groups[key]['info']['perms'] = sentence_groups[key]['info']['perms'] + additional
 
     abtest_tuples = ABTuple.query.filter(ABTuple.abtest_id == id).all()
-    
+    n_tuples_selected = 0
     for ab in abtest_tuples:
         ab.selection_form = ABtestItemSelectionForm(obj=ab)
+        if ab.selected:
+            n_tuples_selected +=1
 
     return render_template(
         'abtest.jinja',
@@ -193,6 +195,7 @@ def abtest_detail(id):
         abtest_form=form,
         abtest_tuples=abtest_tuples,
         ratings=ratings,
+        n_tuples_selected=n_tuples_selected,
         section='abtest')
 
 
@@ -545,13 +548,11 @@ def abtest_tuple_edit(id):
 def abtest_select_all(id):
     try:
         form = ABtestSelectAllForm(request.form)
-        is_synth = True if form.data['is_synth'] == 'True' else False
         select = True if form.data['select'] == 'True' else False
-        abtest_list = ABInstance.query\
-            .filter(ABInstance.abtest_id == id)\
-            .filter(ABInstance.is_synth == is_synth).all()
-        for m in abtest_list:
-            m.selected = select
+        abtest_list = ABTuple.query\
+            .filter(ABTuple.abtest_id == id).all()
+        for ab in abtest_list:
+            ab.selected = select
         db.session.commit()
         return redirect(url_for('abtest.abtest_detail', id=id))
     except Exception as error:

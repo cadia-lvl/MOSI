@@ -256,7 +256,6 @@ class ABtestForm(ModelForm):
 
 
 class ABtestSelectAllForm(Form):
-    is_synth = HiddenField()
     select = HiddenField()
 
 
