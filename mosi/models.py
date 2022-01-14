@@ -5,6 +5,7 @@ import wave
 import json
 import subprocess
 import random
+import math
 from collections import Counter, defaultdict
 
 import numpy as np
@@ -793,7 +794,9 @@ class ABtest(BaseModel, db.Model):
     def num_unique_utterances(self):
         return len(self.list_unique_utterances)
 
-        
+    @property
+    def lowest_n_ratings(self):
+        return min(self.ABtest_tuples, key = lambda x: x.num_ratings).num_ratings
 
     def add_participant(self, user):
         if not self.num_participants:

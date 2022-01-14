@@ -262,6 +262,11 @@ def take_abtest(abtest_uuid):
 
 @abtest.route('/abtest/<int:id>/abtest/<string:uuid>', methods=['GET', 'POST'])
 def abtest_test(id, uuid):
+    """
+    Finds the lowest number of ratings among the ab-objects and picks as many objects with 
+    that rating as is possible, after that samples randomly from the rest. Do this to ensure roughly
+    equal listens to every tuple
+    """
     user = User.query.filter(User.uuid == uuid).first()
     if user.is_admin():
         if user.id != current_user.id:
@@ -271,11 +276,24 @@ def abtest_test(id, uuid):
     abtest_tuples = ABTuple.query.filter(ABTuple.abtest_id == id, ABTuple.selected == True)
     abtest_list_all = [tuple for tuple in abtest_tuples if tuple.first.path and tuple.second.path]
     num_samples = min(abtest.num_listening_samples_per_test, len(abtest_list_all), abtest.num_unique_utterances)
+    lowest_n_ratings = abtest.lowest_n_ratings
 
-    full_sorted_list = sorted(abtest_list_all, key=lambda x: x.num_ratings)
     
-    abtest_list = full_sorted_list[:num_samples]
+    ab_lowest_n_ratings = [obj for obj in abtest_list_all if obj.num_ratings == lowest_n_ratings]
+    random.shuffle(ab_lowest_n_ratings)
+    ab_not_lowest = [obj for obj in abtest_list_all if obj.num_ratings != lowest_n_ratings]
+    
+    random.shuffle(ab_not_lowest)
 
+    abtest_list = []
+    for i in range(min(len(ab_lowest_n_ratings), num_samples)):
+        abtest_list.append(ab_lowest_n_ratings[i])
+    for i in range(num_samples-len(abtest_list)):
+        abtest_list.append(ab_not_lowest[i])
+    
+    #full_sorted_list = sorted(abtest_list_all, key=lambda x: x.num_ratings)
+    
+    #abtest_list = full_sorted_list[:num_samples]
     random.shuffle(abtest_list)
     audio_data = []
     json_list = []
