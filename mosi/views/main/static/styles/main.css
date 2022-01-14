@@ -233,3 +233,14 @@ a{
     max-height: 400px;
     overflow-y: auto;
 }
+
+
+.ui-tooltip {
+    /* tooltip container box */
+    white-space: pre-line;
+}
+
+.ui-tooltip-content {
+    /* tooltip content */
+    white-space: pre-line;
+}
