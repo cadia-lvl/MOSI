@@ -86,11 +86,6 @@
         {% endif %}
 
       <div class='my-4'>
-            {% if abtest.help_text %}
-                <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-4'>
-                    <h4 class="text-center">{{ abtest.help_text }}</h4>
-                </div> 
-            {% endif %}
             <form class="text-center" id="ratingButtons">
                 <div class="btn-group btn-group-toggle" data-toggle="buttons">
                     <label class="btn btn-outline-primary center-block border-success rounded-pill-left" name="optionsLabel">
@@ -122,6 +117,11 @@
             </button>
         </div>
     </div>
+    {% if abtest.help_text %}
+        <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mt-5 mb-4'>
+            <p class="">{{ abtest.help_text }}</p>
+        </div> 
+    {% endif %}
 {% endblock %}
 
 {% block scripts %}
