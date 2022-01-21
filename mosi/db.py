@@ -476,6 +476,21 @@ def delete_abtest_tuple_db(instance):
         return False, errors
     return True, errors
 
+def delete_abtest_user_ratings(user_id, abtest_id):
+    abtest = ABtest.query.get(abtest_id)
+    ratings = abtest.getAllUserRatings(user_id)
+    errors = []
+    try:
+        for r in ratings:
+            db.session.delete(r)
+        db.session.commit()
+    except Exception as error:
+        errors.append("Remove from database error")
+        print(f'{error}\n{traceback.format_exc()}')
+    if errors:
+        return False, errors
+    return True, errors
+
 
 def resolve_order(object, sort_by, order='desc'):
     ordering = getattr(object, sort_by)

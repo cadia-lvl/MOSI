@@ -652,7 +652,7 @@ class ABtest(BaseModel, db.Model):
 
     def getAllUserRatings(self, user_id):
         ratings = []
-        for m in self.ABtest_objects:
+        for m in self.ABtest_tuples:
             for r in m.ratings:
                 if user_id == r.user_id:
                     ratings.append(r)

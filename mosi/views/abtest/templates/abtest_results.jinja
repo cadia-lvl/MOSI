@@ -175,6 +175,37 @@
 
 {% endblock %}
 
+{% block modals %}
+
+    <div class="modal fade" id='deleteUserRatingsModal' tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Þú ert við það að eyða endurgjöfum notenda!</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    Með því að eyða þessari línu fremur þú alheimssglæp.
+                </p>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                <a id='confirmationButton' href='{{url_for("abtest.delete_ratings_by_user", abtest_id=1, user_id=1)}}' class='btn btn-danger'>
+                    Eyða
+                    {{macros.btn_icon('trash', 'l')}}
+                </a>
+            </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+
 {% block scripts %}
     {{super()}}
 
@@ -198,7 +229,10 @@
         });
 
 
-
+    
+        function deleteUserRatingsButton(id){
+            $('#deleteUserRatingsModal #confirmationButton').attr('href', '{{url_for("abtest.delete_ratings_by_user", abtest_id=abtest.id, user_id=1)}}'.replace("user_ratings/1/abtest","user_ratings/<int:user_id>/abtest".replace('<int:user_id>', id)));
+        }
 
         var config = {
             responsive: true

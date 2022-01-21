@@ -16,7 +16,7 @@ from sqlalchemy.exc import IntegrityError
 from mosi.models import (ABInstance, User, ABtest, ABTuple,
                          CustomToken, CustomRecording, db)
 from mosi.db import (resolve_order, save_custom_wav_for_abtest, delete_abtest_instance_db,
-                        save_abtest_ratings, delete_abtest_tuple_db)
+                        save_abtest_ratings, delete_abtest_tuple_db, delete_abtest_user_ratings)
 from mosi.forms import (ABtestSelectAllForm, ABtestUploadForm, ABtestItemSelectionForm,
                         ABtestTestForm, ABtestForm, ABtestDetailForm)
 
@@ -103,13 +103,28 @@ def create_tuple(ab_id, first_id, second_id, ref_id=None):
 def delete_abtest_tuple(id):
     tuple = ABTuple.query.get(id)
     abtest_id = tuple.abtest_id
-    did_delete, errors = delete_abtest_tuple_db(tuple)
+    did_delete, errors = delete_abtest_user_ratings(tuple)
     if did_delete:
         flash("Línu var eytt", category='success')
     else:
         flash("Ekki gekk að eyða línu rétt", category='warning')
         print(errors)
     return redirect(url_for('abtest.abtest_detail', id=abtest_id))
+    
+
+@abtest.route('/abtest/user_ratings/<int:user_id>/abtest/<int:abtest_id>/delete/', methods=['GET'])
+@login_required
+@roles_accepted('admin')
+def delete_ratings_by_user(abtest_id, user_id):
+    did_delete, errors = delete_abtest_user_ratings(user_id, abtest_id)
+    if did_delete:
+        flash("Notenda einkunnum var eytt", category='success')
+    else:
+        flash("Ekki gekk að eyða línu rétt", category='warning')
+        print(errors)
+    
+    return redirect(url_for('abtest.abtest_results', id=abtest_id))
+
 
 @abtest.route('/abtest/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -305,7 +320,7 @@ def abtest_test(id, uuid):
         ab_tuple['first']['url'] = i.first.custom_recording.get_download_url()
         ab_tuple['second']['recording'] = i.second.custom_recording
         ab_tuple['second']['url'] = i.second.custom_recording.get_download_url()
-        json_list_el = {'tuple': i.get_dict(),'first': i.first.custom_recording.get_dict(), 'second':i.second.custom_recording.get_dict(), 'token': i.token.get_dict()}
+        json_list_el = {'tuple': i.get_dict(),'first': i.first.custom_recording.get_dict(), 'second':i.second.custom_recording.get_dict(), 'token': i.token.get_dict(), 'invert_A_B_arrangement': bool(random.getrandbits(1))}
         if i.has_reference:
             ab_tuple['reference'] = {'recording': i.ref.custom_recording}
             ab_tuple['reference']['url'] = i.ref.custom_recording.get_download_url()
