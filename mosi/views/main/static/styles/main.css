@@ -244,3 +244,15 @@ a{
     /* tooltip content */
     white-space: pre-line;
 }
+
+.abtest-border-thickness{
+    border-width:4px !important;
+}
+
+.abtest-border-finished {
+    border-color: #00ff37 !important;
+}
+
+.abtest-border-unfinished {
+    border-color: #ff5900 !important;
+}

@@ -37,7 +37,7 @@
             <div class='row mt-2' id="reference-container">
                 <div class='text-center mx-auto'>
                     <audio id="audio-recording" src={{audio_data[0].reference.url}} type="audio/wav"></audio>
-                    <button type='button' id="play-ref" class='btn btn-success rounded-pill p-3'>
+                    <button type='button' id="play-ref" class='btn btn-success rounded-pill p-3 border abtest-border-thickness abtest-border-unfinished'>
                         <i id='playButtonIcon_ref' class='fa fa-play'></i> Samanburður
                     </button>
                 </div>
@@ -46,74 +46,40 @@
             <div class='row mt-2' id="reference-container" style="visibility: hidden;">
                 <div class='text-center mx-auto' >
                     <audio id="audio-recording" type="audio/wav"></audio>
-                    <button type='button' id="play-ref" class='btn btn-success rounded-pill p-3'>
+                    <button type='button' id="play-ref" class='btn btn-success rounded-pill p-3 border abtest-border-thickness abtest-border-unfinished'>
                         <i id='playButtonIcon_ref' class='fa fa-play'></i> Samanburður
                     </button>
                 </div>
             </div>
         {% endif %}
-        {#
-        {% if not invert_A_B_arrangement%} 
-        #}
-            <div class='row mt-2'>
-                <div class='col-6 text-center'>
-                    <audio id="audio-recording" src={{audio_data[0].first.url}} type="audio/wav"></audio>
-                    <button type='button' id="play-first" class='btn btn-success rounded-pill p-3'>
-                        <i id='playButtonIcon_first' class='fa fa-play'></i> A
-                    </button>
-                </div>
-                <div class='col-6 text-center'>
-                    <audio id="audio-recording" src={{audio_data[0].second.url}} type="audio/wav"></audio>
-                    <button type='button' id="play-second" class='btn btn-success rounded-pill p-3'>
-                        <i id='playButtonIcon_second' class='fa fa-play'></i> B
-                    </button>
-                </div>
+        <div class='row mt-2'>
+            <div class='col-6 text-center'>
+                <audio id="audio-recording" src={{audio_data[0].first.url}} type="audio/wav"></audio>
+                <button type='button' id="play-first" class='btn btn-success rounded-pill p-3 border abtest-border-thickness abtest-border-unfinished'>
+                    <i id='playButtonIcon_first' class='fa fa-play'></i> A
+                </button>
             </div>
+            <div class='col-6 text-center'>
+                <audio id="audio-recording" src={{audio_data[0].second.url}} type="audio/wav"></audio>
+                <button type='button' id="play-second" class='btn btn-success rounded-pill p-3 border abtest-border-thickness abtest-border-unfinished'>
+                    <i id='playButtonIcon_second' class='fa fa-play'></i> B
+                </button>
+            </div>
+        </div>
 
-            <div class='my-4'>
-                <form class="text-center" id="ratingButtons">
-                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                        <label class="btn btn-outline-primary center-block border-success rounded-pill-left" id="label1" name="optionsLabel">
-                            <input class="mx-3 ratingButton" type="radio" name="options" onchange="getRating(value)" id="option1" value="1">A
-                        </label>
-                        <label class="btn btn-outline-primary center-block border-success rounded-pill-right" id="label2" name="optionsLabel">
-                            <input class="mx-3 ratingButton" type="radio" name="options" onchange="getRating(value)" id="option2" value="2">B
-                        </label>
-                    </div>
-                </form>
-            </div>
-        {#
-        {% else %}
-            <div class='row mt-2'>
-                <div class='col-6 text-center'>
-                    <audio id="audio-recording" src={{audio_data[0].second.url}} type="audio/wav"></audio>
-                    <button type='button' id="play-second" class='btn btn-success rounded-pill p-3'>
-                        <i id='playButtonIcon_second' class='fa fa-play'></i> A
-                    </button>
+        <div class='my-4'>
+            <form class="text-center" id="ratingButtons">
+                <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                    <label class="btn btn-outline-primary center-block border-success rounded-pill-left" id="label1" name="optionsLabel">
+                        <input class="mx-3 ratingButton" type="radio" name="options" onchange="getRating(value)" id="option1" value="1">A
+                    </label>
+                    <label class="btn btn-outline-primary center-block border-success rounded-pill-right" id="label2" name="optionsLabel">
+                        <input class="mx-3 ratingButton" type="radio" name="options" onchange="getRating(value)" id="option2" value="2">B
+                    </label>
                 </div>
-                <div class='col-6 text-center'>
-                    <audio id="audio-recording" src={{audio_data[0].first.url}} type="audio/wav"></audio>
-                    <button type='button' id="play-first" class='btn btn-success rounded-pill p-3'>
-                        <i id='playButtonIcon_first' class='fa fa-play'></i> B
-                    </button>
-                </div>
-                
-            </div>
-
-            <div class='my-4'>
-                <form class="text-center" id="ratingButtons">
-                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                        <label class="btn btn-outline-primary center-block border-success rounded-pill-left" id="label2" name="optionsLabel">
-                            <input class="mx-3 ratingButton" type="radio" name="options" onchange="getRating(value)" id="option2" value="2">A
-                        </label>
-                        <label class="btn btn-outline-primary center-block border-success rounded-pill-right" id="label1" name="optionsLabel">
-                            <input class="mx-3 ratingButton" type="radio" name="options" onchange="getRating(value)" id="option1" value="1">B
-                        </label>
-                    </div>
-                </form>
-            </div>
-        {% endif %}
-        #}
+            </form>
+        </div>
+    </div>
     <div class='row'>
         <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 controls mb-3 d-flex justify-content-between'>
             <button id='prev' class='btn btn-sm btn-secondary rounded-pill' type='button'>
@@ -433,12 +399,58 @@
             setTokenUI();
             setProgressUI(abtestIndex + 1);
             setButtonUI();
+            setBorderUI()
             setFinishButtonUI();
             setRadioUI();
             setReferenceUI();
             $( "#abtestUI" ).animate({
                 opacity: 1.0
             }, 300);
+        }
+
+        function setBorderUI(){
+            var btns = [playButtonFirst, playButtonSecond, playButtonRef]
+            for(let i = 0; i < btns.length; i++){
+                btns[i].removeClass("abtest-border-unfinished");
+                btns[i].removeClass("abtest-border-finished");
+            }
+            if(audio_json[abtestIndex]['tuple']['has_ref']){
+                if(audio_json[abtestIndex]['reference']['is_played']){
+                    playButtonRef.addClass("abtest-border-finished");
+                }
+                else{
+                    playButtonRef.addClass("abtest-border-unfinished");
+                }
+            }
+            //if(audio_json[abtestIndex]['invert_A_B_arrangement']){
+            if(false){
+                if(audio_json[abtestIndex]['first']['is_played']){
+                    playButtonSecond.addClass("abtest-border-finished");
+                }
+                else{
+                    playButtonSecond.addClass("abtest-border-unfinished");
+                }
+                if(audio_json[abtestIndex]['second']['is_played']){
+                    playButtonFirst.addClass("abtest-border-finished");
+                }
+                else{
+                    playButtonFirst.addClass("abtest-border-unfinished");
+                }
+            }
+            else{
+                if(audio_json[abtestIndex]['first']['is_played']){
+                        playButtonFirst.addClass("abtest-border-finished");
+                }
+                else{
+                    playButtonFirst.addClass("abtest-border-unfinished");
+                }
+                if(audio_json[abtestIndex]['second']['is_played']){
+                    playButtonSecond.addClass("abtest-border-finished");
+                }
+                else{
+                    playButtonSecond.addClass("abtest-border-unfinished");
+                }
+            }            
         }
 
         function setReferenceUI(){
