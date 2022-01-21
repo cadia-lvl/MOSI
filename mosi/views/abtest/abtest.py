@@ -290,7 +290,7 @@ def abtest_test(id, uuid):
     abtest = ABtest.query.get(id)
     abtest_tuples = ABTuple.query.filter(ABTuple.abtest_id == id, ABTuple.selected == True)
     abtest_list_all = [tuple for tuple in abtest_tuples if tuple.first.path and tuple.second.path]
-    num_samples = min(abtest.num_listening_samples_per_test, len(abtest_list_all), abtest.num_unique_utterances)
+    num_samples = min(abtest.num_listening_samples_per_test, len(abtest_list_all))
     lowest_n_ratings = abtest.lowest_n_ratings
 
     
