@@ -23,22 +23,12 @@
                             Gera að vefstjóra
                         {% endif %}
                     </a>
-                    {% if not user.is_verifier() %}
-                        <a href="{{url_for('user.user_make_verifier', id=user.id)}}" class='dropdown-item text-warning'>
-                            {{macros.btn_icon('key', 'r')}}
-                            Gera að greinanda
-                        </a>
-                    {% endif %}
                 </div>
                 <button type='button' data-toggle='modal', data-target='#deleteModal' class='btn btn-sm btn-secondary text-danger float-right mr-2'>
                     {{macros.btn_icon('trash', 'r')}}
                     Eyða notanda
                 </button>
             {% endif %}
-            <a href="{{url_for('user.user_time_info', id=user.id)}}" class='btn btn-sm btn-secondary text-success float-right mr-2'>
-                Tímaskýrsla
-                {{macros.btn_icon('clock', 'l')}}
-            </a>
 
         </div>
     </div>

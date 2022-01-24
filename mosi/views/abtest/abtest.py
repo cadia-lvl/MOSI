@@ -353,6 +353,7 @@ def abtest_results(id):
                 request.args.get('sort_by', default='id'),
                 order=request.args.get('order', default='desc'))).all()
     ratings = abtest.getAllRatings()
+    print(ratings)
     max_placement = 1
     for j in ratings:
         if j.placement > max_placement:
@@ -369,7 +370,7 @@ def abtest_results(id):
     for i in ratings:
         all_rating_stats.append(i.rating)
         placement[i.placement - 1] += i.rating
-        p_counter[i.placement - 1] += 1
+        p_counter[i.placement - 1] += 1 
     all_rating_stats = np.array(all_rating_stats)
     for i in range(len(placement)):
         if p_counter[i] != 0 and placement[i] != 0:
@@ -449,7 +450,7 @@ def abtest_results(id):
         per_voice_data["x"].append(voice_idx)
         per_voice_data["y"].append(round(np.mean([r.rating for r in ratings]), 2))
         per_voice_data["std"].append(round(np.std([r.rating for r in ratings]), 2))
-
+    print(ratings)
     return render_template(
         'abtest_results.jinja',
         abtest=abtest,

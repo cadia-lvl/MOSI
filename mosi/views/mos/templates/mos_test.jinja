@@ -316,7 +316,7 @@
         function setTokenUI(){
             tokenText.innerHTML = mos_list[mosIndex]['text'];
             if (mos_list[mosIndex]['token'] != null){
-                tokenfileIDSpan.innerHTML = mos_list[mosIndex]['token']['file_id'];
+                //tokenfileIDSpan.innerHTML = '#' + mos_list[mosIndex]['token']['id'];
                 tokenHref.href = mos_list[mosIndex]['token']['url'];
             }
             else{

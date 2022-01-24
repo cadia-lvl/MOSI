@@ -116,13 +116,8 @@ def save_custom_wav_for_abtest(zip, zip_name, tsv_name, abtest, id):
                         print('Not extracted correctly')
                         db.session.delete(custom_token)
                         db.session.delete(custom_recording)
-                        db.session.delete(ab_instance)
-        
-                        
-                        
-        
+                        db.session.delete(ab_instance)       
         db.session.commit()
-        
         return uploaded_obj
 
 
@@ -141,6 +136,7 @@ def save_custom_wav(zip, zip_name, tsv_name, mos, id):
         pathlib.Path(webm_path).mkdir(exist_ok=True)
         uploaded_obj = []
         for row in rd:
+            print(row)
             if row[0] and (len(row) == 3 or len(row) == 5 or len(row) == 6):
                 # Validate columns
                 if not ((row[1].lower() == 's' or row[1].lower() == 'r') and row[2]):
@@ -164,18 +160,15 @@ def save_custom_wav(zip, zip_name, tsv_name, mos, id):
                                 custom_recording=custom_recording)
                         elif len(row) == 4:
                             mos_instance = MosInstance(
-                                custom_token=custom_token,
                                 custom_recording=custom_recording,
                                 voice_idx=row[3])
                         elif len(row) == 5:
                             mos_instance = MosInstance(
-                                custom_token=custom_token,
                                 custom_recording=custom_recording,
                                 voice_idx=row[3],
                                 utterance_idx=row[4])
                         elif len(row) == 6:
                             mos_instance = MosInstance(
-                                custom_token=custom_token,
                                 custom_recording=custom_recording,
                                 voice_idx=row[3],
                                 utterance_idx=row[4],

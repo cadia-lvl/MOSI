@@ -1,5 +1,5 @@
 # M.O.S.I.
-MOSI is a recording client made specifically for TTS data collections. It supports multiple collections, single and multi-speaker, and can prompt sentences based on phonetic coverage.
+MOSI is a evaluation client made specifically for TTS evaluation. It supports Mean opinion score(MOS), AB and ABX tests, and can accommodate some needs for a SUS test. The development and testing for this platform has been done on Linux(Ubuntu 16 or later, reccomended choice) and on MACOS(with some modifications).
 
 # Setup
 * Other system requirements (installed via apt):
@@ -9,8 +9,9 @@ MOSI is a recording client made specifically for TTS data collections. It suppor
     * libffi-dev: `sudo apt-get install -y libffi-dev`
 
 * On ubuntu might have to run `sudo apt-get install python3-dev`
-* cd into MOSI, make a python virtual environment within the MOSI dir `python3.6 -m venv py36`
+* Now, cd into MOSI, make a python virtual environment within the MOSI dir `python3.6 -m venv py36`
 * Activate venv using `source py36/bin/activate`
+* Conda venv is fine as well. Python 3.6 is good, the platform has been tested on Pthon 3.8 as well but using it might lead to some version conrtol and tinkering when installing the requirements. Should you run into any errors while installing requirements, it is usually due to some version mixup, easily fixable by changing versions of python or in requirements.txt.
 * Install Python requirements using `pip3 install -r requirements.txt`
     * ffmpeg (or avconv)
 
@@ -24,10 +25,10 @@ Start by creating a databese and a user:
 ```
 # Log in as postgres user
 sudo -u postgres -i
-# Create role for lobe and select password
+# Create role for mosi and select password
 createuser mosi --pwprompt
 # Create mosi database with the new user as owner
-createdb mosi --owner=lobe
+createdb mosi --owner=mosi
 ```
 Remember to change settings/development.py accordingly. Replace all the values in \<BRACKETS\> with the postgres information you created just now.
 `SQLALCHEMY_DATABASE_URI = 'postgresql://<POSTGRES-USERNAME>:<POSTGRES-PWD>@localhost:5432/<DATABASENAME>'`
@@ -43,6 +44,7 @@ python manage.py add_default_configuration
 
 Create a super user with `python manage.py add_user`
 
+
 # Backing up & restoring
 1. Create a new database.
     1. sudo su postgres
@@ -51,7 +53,7 @@ Create a super user with `python manage.py add_user`
     4. GRANT ALL PRIVILEGES ON DATABASE <name> TO <db_user>;
 
 2. Create a database dump of the previous database
-    1. su <lobe_linux_user>
+    1. su <mosi_linux_user>
     2. pg_dump <old_db_name> > <old_db_name>.sql
 
 3. Migrate the schema to the new database

@@ -494,8 +494,7 @@ class MosInstance(BaseModel, db.Model):
     selected = db.Column(db.Boolean, default=False, info={
         'label': 'Hafa upptoku'})
 
-    def __init__(self, custom_token, custom_recording, voice_idx=None, utterance_idx=None, question=None):
-        self.custom_token = custom_token
+    def __init__(self, custom_recording, voice_idx=None, utterance_idx=None, question=None):
         self.custom_recording = custom_recording
         self.voice_idx = voice_idx
         self.utterance_idx = utterance_idx
