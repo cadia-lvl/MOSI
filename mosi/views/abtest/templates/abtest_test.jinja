@@ -321,6 +321,7 @@
             else {
                 return 0
             }
+            audio_json[abtestIndex][btn]['is_played'] = true;
             if(isPlaying){
                 //stop
                 stopPlayingAll()
@@ -348,7 +349,7 @@
                 }
                 audio.onended = function(){
                     playButtonIcon_btn.removeClass('fa-stop').addClass('fa-play');
-                    audio_json[abtestIndex][btn]['is_played'] = true;
+                    
                     //setRatingsButtonsStatus();
                     //setButtonUI();
                     //setFinishButtonUI();
@@ -358,6 +359,7 @@
                 playButtonIcon_btn.removeClass('fa-play').addClass('fa-stop');
                 audio.play();
             }
+            updateUI();
         }
         function finishAction(){
             finishButtonIcon.removeClass('fa-arrow-right').addClass('fa-spinner').addClass('fa-spin');
