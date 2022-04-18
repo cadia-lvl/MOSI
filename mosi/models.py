@@ -896,7 +896,7 @@ class ABtest(BaseModel, db.Model):
                     model_voice_ratings[second_id][ab_tuple.second.voice_idx][first_id][ab_tuple.first.voice_idx] = {'total': 0, 'positive': 0}
                 
                 
-                if r.rating == 1:
+                if r.rating == 2:
                     model_voice_ratings[second_id][ab_tuple.second.voice_idx][first_id][ab_tuple.first.voice_idx]['positive'] += 1
             
                 model_voice_ratings[second_id][ab_tuple.second.voice_idx][first_id][ab_tuple.first.voice_idx]['total'] += 1
