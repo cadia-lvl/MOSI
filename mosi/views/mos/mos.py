@@ -12,6 +12,7 @@ from flask import (Blueprint, Response, send_from_directory, request,
 from flask import current_app as app
 from flask_security import login_required, roles_accepted, current_user
 from sqlalchemy.exc import IntegrityError
+from mosi.decorators import (organiser_of_mos_or_admin, organiser_of_mos_instance_or_admin)
 
 from mosi.models import (Mos, MosInstance, User,
                          CustomToken, CustomRecording, db)
@@ -26,25 +27,36 @@ mos = Blueprint(
 
 @mos.route('/mos/')
 @login_required
-@roles_accepted('admin')
+@roles_accepted('admin', 'organiser')
 def mos_list():
-    page = int(request.args.get('page', 1))
-    mos_list = Mos.query.order_by(
-            resolve_order(
-                Mos,
-                request.args.get('sort_by', default='created_at'),
-                order=request.args.get('order', default='desc')))\
-        .paginate(page, per_page=app.config['MOS_PAGINATION'])
+    if current_user.is_admin():
+        page = int(request.args.get('page', 1))
+        mos_list = Mos.query.order_by(
+                resolve_order(
+                    Mos,
+                    request.args.get('sort_by', default='created_at'),
+                    order=request.args.get('order', default='desc')))\
+            .paginate(page, per_page=app.config['MOS_PAGINATION'])
+    else:
+        mos_ids = current_user.get_mos_ids
+        page = int(request.args.get('page', 1))
+        mos_list = Mos.query.filter(Mos.id.in_(mos_ids)).order_by(
+                resolve_order(
+                    Mos,
+                    request.args.get('sort_by', default='created_at'),
+                    order=request.args.get('order', default='desc')))\
+            .paginate(page, per_page=app.config['MOS_PAGINATION'])
+
     return render_template(
         'mos_list.jinja',
         mos_list=mos_list,
         section='mos')
 
-@mos.route('/mos/<int:id>', methods=['GET', 'POST'])
+@mos.route('/mos/<int:mos_id>', methods=['GET', 'POST'])
 @login_required
-@roles_accepted('admin')
-def mos_detail(id):
-    mos = Mos.query.get(id)
+@organiser_of_mos_or_admin
+def mos_detail(mos_id):
+    mos = Mos.query.get(mos_id)
     form = MosUploadForm()
     select_all_forms = [
         MosSelectAllForm(is_synth=True, select=True),
@@ -61,7 +73,7 @@ def mos_detail(id):
                     zip_name = zip_file.filename[:-4]
                     tsv_name = '{}/index.csv'.format(zip_name)
                     successfully_uploaded = save_custom_wav(
-                        zip, zip_name, tsv_name, mos, id)
+                        zip, zip_name, tsv_name, mos, mos_id)
                     if len(successfully_uploaded) > 0:
                         flash("Tókst að hlaða upp {} setningum.".format(
                             len(successfully_uploaded)),
@@ -70,7 +82,7 @@ def mos_detail(id):
                         flash(
                             "Ekki tókst að hlaða upp neinum setningum.",
                             category="warning")
-                return redirect(url_for('mos.mos_detail', id=id))
+                return redirect(url_for('mos.mos_detail', mos_id=mos_id))
             else:
                 flash(
                     "Ekki tókst að hlaða inn skrá. Eingögnu hægt að hlaða inn skrám á stöðluðu formi.",
@@ -80,7 +92,7 @@ def mos_detail(id):
                 "Villa í formi, athugaðu að rétt sé fyllt inn og reyndu aftur.",
                 category="danger")
 
-    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(
+    mos_list = MosInstance.query.filter(MosInstance.mos_id == mos_id).order_by(
             resolve_order(
                 MosInstance,
                 request.args.get('sort_by', default='id'),
@@ -108,17 +120,17 @@ def mos_detail(id):
         section='mos')
 
 
-@mos.route('/mos/<int:id>/edit/detail', methods=['GET', 'POST'])
+@mos.route('/mos/<int:mos_id>/edit/detail', methods=['GET', 'POST'])
 @login_required
-@roles_accepted('admin')
-def mos_edit_detail(id):
-    mos = Mos.query.get(id)
+@organiser_of_mos_or_admin
+def mos_edit_detail(mos_id):
+    mos = Mos.query.get(mos_id)
     form = MosDetailForm(request.form, obj=mos)
     if request.method == "POST":
         if form.validate():
             form.populate_obj(mos)
             db.session.commit()
-            return redirect(url_for("mos.mos_detail", id=mos.id))
+            return redirect(url_for("mos.mos_detail", mos_id=mos.id))
     
     form.use_latin_square.data = mos.use_latin_square
     form.show_text_in_test.data = mos.show_text_in_test
@@ -126,7 +138,7 @@ def mos_edit_detail(id):
         'forms/model.jinja',
         form=form,
         type='edit',
-        action=url_for('mos.mos_edit_detail', id=mos.id))
+        action=url_for('mos.mos_edit_detail', mos_id=mos.id))
 
 
 @mos.route('/mos/take_test/<uuid:mos_uuid>/', methods=['GET', 'POST'])
@@ -211,12 +223,12 @@ def mos_test(id, uuid):
         section='mos')
 
 
-@mos.route('/mos/<int:id>/mos_results', methods=['GET', 'POST'])
+@mos.route('/mos/<int:mos_id>/mos_results', methods=['GET', 'POST'])
 @login_required
-@roles_accepted('admin')
-def mos_results(id):
-    mos = Mos.query.get(id)
-    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(
+@organiser_of_mos_or_admin
+def mos_results(mos_id):
+    mos = Mos.query.get(mos_id)
+    mos_list = MosInstance.query.filter(MosInstance.mos_id == mos_id).order_by(
             resolve_order(
                 MosInstance,
                 request.args.get('sort_by', default='id'),
@@ -228,7 +240,7 @@ def mos_results(id):
             max_placement = j.placement
 
     if len(ratings) == 0:
-        return redirect(url_for('mos.mos_detail', id=mos.id))
+        return redirect(url_for('mos.mos_detail', mos_id=mos.id))
     user_ids = mos.getAllUsers()
     users = User.query.filter(User.id.in_(user_ids)).all()
 
@@ -327,11 +339,11 @@ def mos_results(id):
     )
 
 
-@mos.route('/mos/<int:id>/mos_results/download', methods=['GET'])
+@mos.route('/mos/<int:mos_id>/mos_results/download', methods=['GET'])
 @login_required
-@roles_accepted('admin')
-def download_mos_data(id):
-    mos = Mos.query.get(id)
+@organiser_of_mos_or_admin
+def download_mos_data(mos_id):
+    mos = Mos.query.get(mos_id)
     response_lines = [
         ";".join(map(str, line)) for line in mos.getResultData()
     ]
@@ -344,13 +356,13 @@ def download_mos_data(id):
                  "attachment; filename={}".format(filename)})
 
 
-@mos.route('/mos/<int:id>/stream_zip')
+@mos.route('/mos/<int:mos_id>/stream_zip')
 @login_required
-@roles_accepted('admin')
-def stream_MOS_zip(id):
-    mos = Mos.query.get(id)
+@organiser_of_mos_or_admin
+def stream_MOS_zip(mos_id):
+    mos = Mos.query.get(mos_id)
     mos_list = MosInstance.query\
-        .filter(MosInstance.mos_id == id)\
+        .filter(MosInstance.mos_id == mos_id)\
         .filter(MosInstance.is_synth == False).order_by(
             resolve_order(
                 MosInstance,
@@ -378,7 +390,7 @@ def stream_MOS_zip(id):
 
 @mos.route('/mos/stream_mos_demo')
 @login_required
-@roles_accepted('admin')
+@roles_accepted('admin', 'organiser')
 def stream_MOS_index_demo():
     other_dir = app.config["OTHER_DIR"]
     try:
@@ -412,15 +424,15 @@ def post_mos_rating(id):
             url_for('mos.mos_done', id=mos_id), status=200)
     else:
         return Response(
-            url_for('mos.mos_detail', id=mos_id), status=200)
+            url_for('mos.mos_detail', mos_id=mos_id), status=200)
 
 
-@mos.route('/mos/instances/<int:id>/edit', methods=['POST'])
+@mos.route('/mos/instances/<int:mos_instance_id>/edit', methods=['POST'])
 @login_required
-@roles_accepted('admin')
-def mos_instance_edit(id):
+@organiser_of_mos_instance_or_admin
+def mos_instance_edit(mos_instance_id):
     try:
-        instance = MosInstance.query.get(id)
+        instance = MosInstance.query.get(mos_instance_id)
         form = MosItemSelectionForm(request.form, obj=instance)
         form.populate_obj(instance)
         db.session.commit()
@@ -434,32 +446,32 @@ def mos_instance_edit(id):
         return Response(errorMessage, status=500)
 
 
-@mos.route('/mos/<int:id>/select_all', methods=['POST'])
+@mos.route('/mos/<int:mos_id>/select_all', methods=['POST'])
 @login_required
-@roles_accepted('admin')
-def mos_select_all(id):
+@organiser_of_mos_or_admin
+def mos_select_all(mos_id):
     try:
         form = MosSelectAllForm(request.form)
         is_synth = True if form.data['is_synth'] == 'True' else False
         select = True if form.data['select'] == 'True' else False
         mos_list = MosInstance.query\
-            .filter(MosInstance.mos_id == id)\
+            .filter(MosInstance.mos_id == mos_id)\
             .filter(MosInstance.is_synth == is_synth).all()
         for m in mos_list:
             m.selected = select
         db.session.commit()
-        return redirect(url_for('mos.mos_detail', id=id))
+        return redirect(url_for('mos.mos_detail', mos_id=mos_id))
     except Exception as error:
         print(error)
         flash("Ekki gekk að merkja alla", category='warning')
-    return redirect(url_for('mos.mos_detail', id=id))
+    return redirect(url_for('mos.mos_detail', mos_id=mos_id))
 
 
-@mos.route('/mos/instances/<int:id>/delete/', methods=['GET'])
+@mos.route('/mos/instances/<int:mos_instance_id>/delete/', methods=['GET'])
 @login_required
-@roles_accepted('admin')
-def delete_mos_instance(id):
-    instance = MosInstance.query.get(id)
+@organiser_of_mos_instance_or_admin
+def delete_mos_instance(mos_instance_id):
+    instance = MosInstance.query.get(mos_instance_id)
     mos_id = instance.mos_id
     did_delete, errors = delete_mos_instance_db(instance)
     if did_delete:
@@ -467,12 +479,12 @@ def delete_mos_instance(id):
     else:
         flash("Ekki gekk að eyða línu rétt", category='warning')
         print(errors)
-    return redirect(url_for('mos.mos_detail', id=mos_id))
+    return redirect(url_for('mos.mos_detail', mos_id=mos_id))
 
 
 @mos.route('/mos/create', methods=['GET', 'POST'])
 @login_required
-@roles_accepted('admin')
+@roles_accepted('admin', 'organiser')
 def mos_create():
     try:
         mos = Mos()
@@ -480,7 +492,7 @@ def mos_create():
         db.session.add(mos)
         db.session.commit()
         flash("Nýrri MOS prufu bætt við", category="success")
-        return redirect(url_for('mos.mos_detail', id=mos.id))
+        return redirect(url_for('mos.mos_detail', mos_id=mos.id))
     except Exception as error:
         flash("Error creating MOS.", category="danger")
         app.logger.error("Error creating MOS {}\n{}".format(

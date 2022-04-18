@@ -11,17 +11,17 @@
                 <a class="nav-link" {% if section == 'user' %}style="color: {{config.COLOR_PALETTE.fourth}}"{% endif %} href="{{url_for('user.user_list')}}">Notendur</a>
             </li>
         {% endif %}
-        {% if not current_user.is_anonymous and current_user.is_admin() %}
+        {% if not current_user.is_anonymous and (current_user.is_admin() or current_user.has_role('organiser'))%}
             <li class="nav-item {% if section == 'mos' %}active{% endif %}">
                 <a class="nav-link" {% if section == 'mos' %}style="color: {{config.COLOR_PALETTE.fourth}}"{% endif %} href="{{url_for('mos.mos_list')}}">MOS prufur</a>
             </li>
         {% endif %}
-        {% if not current_user.is_anonymous and current_user.is_admin() %}
+        {% if not current_user.is_anonymous and (current_user.is_admin() or current_user.has_role('organiser')) %}
             <li class="nav-item {% if section == 'abtest' %}active{% endif %}">
                 <a class="nav-link" {% if section == 'abtest' %}style="color: {{config.COLOR_PALETTE.fourth}}"{% endif %} href="{{url_for('abtest.abtest_list')}}">AB prufur</a>
             </li>
         {% endif %}
-        {% if not current_user.is_anonymous and current_user.is_admin() %}
+        {% if not current_user.is_anonymous and (current_user.is_admin() or current_user.has_role('organiser')) %}
             <li class="nav-item {% if section == 'sus' %}active{% endif %}">
                 <a class="nav-link" {% if section == 'sus' %}style="color: {{config.COLOR_PALETTE.fourth}}"{% endif %} href="{{url_for('sus.sus_list')}}">SUS prufur</a>
             </li>

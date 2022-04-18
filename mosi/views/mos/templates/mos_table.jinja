@@ -16,7 +16,7 @@
             <th>
                 <div class="btn-group" style="margin-bottom: -8px;">
 
-                    <form id='selectAllForm' method="POST" action="{{url_for('mos.mos_select_all', id=mos.id)}}">
+                    <form id='selectAllForm' method="POST" action="{{url_for('mos.mos_select_all', mos_id=mos.id)}}">
                         {% for f in selectAllForm %}
                             {{f}}
                         {% endfor%}
@@ -24,7 +24,7 @@
                             <span class=''><i class="far fa-check-square text-success"></i></span>
                         </button>
                     </form>
-                    <form id='deselectAllForm' method="POST" action="{{url_for('mos.mos_select_all', id=mos.id)}}">
+                    <form id='deselectAllForm' method="POST" action="{{url_for('mos.mos_select_all', mos_id=mos.id)}}">
                         {% for f in deselectAllForm %}
                             {{f}}
                         {% endfor%}

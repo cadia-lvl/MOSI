@@ -27,6 +27,6 @@
     {% if abtest_list.total == 0 %}
         {{macros.no_results("Engar AB prufur",
             "Til að sjá AB prufur þarf fyrst að búa þær til.",
-            url_for('mos.mos_create'), "Búa til AB prufu")}}
+            url_for('abtest.abtest_create'), "Búa til AB prufu")}}
     {% endif %}
 {% endblock %}

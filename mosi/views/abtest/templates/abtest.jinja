@@ -18,12 +18,12 @@
 {% endblock %}
 
 {%block buttons %}
-    {% if current_user.is_admin() %}
+    {% if current_user.is_admin_or_organiser_of_abtest(abtest.id) %}
         <button class="btn btn-secondary btn-sm float-right mr-2 mt-2" type="button" data-toggle='modal', data-target='#uploadABModal'>
             {{macros.btn_icon('upload', 'r')}}
             Hlaða upp
         </button>
-        <a href='{{url_for("abtest.stream_abtest_zip", id=abtest.id)}}' class='btn btn-primary btn-sm float-right mr-2 mt-2'>
+        <a href='{{url_for("abtest.stream_abtest_zip", abtest_id=abtest.id)}}' class='btn btn-primary btn-sm float-right mr-2 mt-2'>
             {{macros.btn_icon('download', 'r')}}
             Sækja upptökur
         </a>
@@ -50,7 +50,7 @@
             </a>
         {% endif %}
         {% if ratings | length  > 0%}
-            <a class='btn btn-secondary btn-sm text-success float-right mt-2 mr-2' href='{{url_for("abtest.abtest_results", id=abtest.id)}}'>
+            <a class='btn btn-secondary btn-sm text-success float-right mt-2 mr-2' href='{{url_for("abtest.abtest_results", abtest_id=abtest.id)}}'>
                 {{macros.btn_icon('chart-bar', 'r')}}
                 Skoða niðurstöður
             </a>
@@ -60,7 +60,7 @@
                 Skoða niðurstöður
             </a>
         {% endif %}
-        <a class='btn btn-secondary btn-sm text-success float-right mt-2 mr-2' href='{{url_for("abtest.abtest_edit_detail", id=abtest.id)}}'>
+        <a class='btn btn-secondary btn-sm text-success float-right mt-2 mr-2' href='{{url_for("abtest.abtest_edit_detail", abtest_id=abtest.id)}}'>
             {{macros.btn_icon('edit', 'r')}}
             Breyta stillingum
         </a>
@@ -270,7 +270,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
-                <a id='confirmationButton' href='{{url_for("abtest.delete_abtest_instance", id=1)}}' class='btn btn-danger'>
+                <a id='confirmationButton' href='{{url_for("abtest.delete_abtest_instance", abtest_id=abtest.id, id=1)}}' class='btn btn-danger'>
                     Eyða
                     {{macros.btn_icon('trash', 'l')}}
                 </a>
@@ -296,7 +296,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
-                <a id='confirmationButton' href='{{url_for("abtest.delete_abtest_tuple", id=1)}}' class='btn btn-danger'>
+                <a id='confirmationButton' href='{{url_for("abtest.delete_abtest_tuple", abtest_id=abtest.id, id=1)}}' class='btn btn-danger'>
                     Eyða
                     {{macros.btn_icon('trash', 'l')}}
                 </a>
@@ -311,11 +311,11 @@
     {{super()}}
     <script>
         function deletebutton(id){
-            $('#deleteModal #confirmationButton').attr('href', '{{url_for("abtest.delete_abtest_instance", id=1)}}'.replace("1", id));
+            $('#deleteModal #confirmationButton').attr('href', '{{url_for("abtest.delete_abtest_instance", abtest_id=abtest.id, id=-1)}}'.replace("-1", id));
         }
 
         function deleteTuplebutton(id){
-            $('#deleteTupleModal #confirmationButton').attr('href', '{{url_for("abtest.delete_abtest_tuple", id=1)}}'.replace("1", id));
+            $('#deleteTupleModal #confirmationButton').attr('href', '{{url_for("abtest.delete_abtest_tuple", abtest_id=abtest.id, id=-1)}}'.replace("-1", id));
         }
 
         $(".abtest-check-button").on('change', function(){

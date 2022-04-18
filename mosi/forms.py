@@ -82,6 +82,12 @@ class VerifierRegisterForm(RegisterForm):
     name = TextField(
         'Nafn',
         [validators.required()])
+    
+
+class OrganiserRegisterForm(RegisterForm):
+    name = TextField(
+        'Nafn',
+        [validators.required()])
 
 
 class UserEditForm(Form):

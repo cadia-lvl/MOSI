@@ -9,7 +9,7 @@ import datetime
 from shutil import copyfile
 from tqdm import tqdm
 from random import randrange
-
+import random
 from flask_migrate import Migrate, MigrateCommand
 from flask_script import Command, Manager
 from flask_security.utils import hash_password
@@ -20,10 +20,12 @@ from termcolor import colored
 from collections import defaultdict
 
 from mosi import app
-from mosi.models import (User, Role,
-                         db, MosInstance)
+from mosi.models import (User, Role, ABRating, ABTuple,
+                         db, MosInstance, ABtest, Mos, Sus)
 from mosi.tools.analyze import (load_sample, signal_is_too_high,
                                 signal_is_too_low)
+from mosi.db import delete_abtest_rating_if_exists
+
 
 migrate = Migrate(app, db, compare_type=True)
 manager = Manager(app)
@@ -56,6 +58,10 @@ class AddDefaultRoles(Command):
             {
                 "name": "test_partitipant",
                 "description": 'Notandi sem tekur eitthvað próf',
+            },
+            {
+                "name": "organiser",
+                "description": 'Notandi sem getur búið til próf',
             },
 
         ]
@@ -133,12 +139,72 @@ def create_db():
     db.create_all()
     db.session.commit()
 
+@manager.command
+def add_admin_defaults():
+    abtests = ABtest.query.all()
+    mos = Mos.query.all()
+    sus = Sus.query.all()
+    user = User.query.get(1)
+    for ab in abtests:
+        if not ab.admins:
+            ab.admins.append(user)
+
+    for m in mos:
+        if not m.admins:
+            m.admins.append(user)
+    
+    for s in sus:
+        if not s.admins:
+            s.admins.append(user)
+    
+    db.session.commit()
+
+
+@manager.command
+def add_dummy_user_ratings():
+    abtest_id = 9
+    abtest = ABtest.query.get(abtest_id)
+    users = []
+    for i in range(30):
+        user_uuid = uuid.uuid4()
+        email = "{}@mosi.is".format(user_uuid)
+        new_user = app.user_datastore.create_user(
+            name='testuser_{}'.format(i),
+            email=email,
+            password=None,
+            uuid=user_uuid,
+            audio_setup=None,
+            roles=['ab_tester', 'test_partitipant']
+        )
+        abtest.add_participant(new_user)
+        users.append(new_user)
+    db.session.commit()
+
+
+    abtest_list_all = ABTuple.query.filter(ABTuple.abtest_id == 9 and ABTuple.selected == True).all()
+    for u in users:
+        abtest_list = random.sample(abtest_list_all, 30)
+        user_id = u.id
+        if len(abtest_list) == 0:
+            return None
+        for i in abtest_list:
+            delete_abtest_rating_if_exists(i.id, user_id)
+            rating = ABRating()
+            rand_rating = random.randint(1,2)
+            rating.rating = int(rand_rating)
+            rating.user_id = user_id
+            rating.placement = random.randint(1,30)
+            i.ratings.append(rating)
+    db.session.commit()
+
+
+
 class AddColumnDefaults(Command):
     def run(self):
         users = User.query.filter(User.uuid == None).all()
         for u in users:
             u.uuid = str(uuid.uuid4())
-        db.session.commit()
+        
 
 
 

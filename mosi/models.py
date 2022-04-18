@@ -260,6 +260,25 @@ roles_users = db.Table(
     db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
 
 
+user_abtest_admin = db.Table(
+    'user_abtest_admin',
+    db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
+    db.Column('abtest_id', db.Integer(), db.ForeignKey('ABtest.id'))
+)
+
+user_mos_test_admin = db.Table(
+    'user_mos_test_admin',
+    db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
+    db.Column('mos_id', db.Integer(), db.ForeignKey('Mos.id'))
+)
+
+user_sus_test_admin = db.Table(
+    'user_sus_test_admin',
+    db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
+    db.Column('sus_id', db.Integer(), db.ForeignKey('Sus.id'))
+)
+
+
 class Role(db.Model, RoleMixin):
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(80), unique=True)
@@ -292,6 +311,15 @@ class User(db.Model, UserMixin):
     #db.relationship(
     #    "ABRating", lazy='joined', backref="User",
     #    cascade='all, delete, delete-orphan')
+    abtest_admin = db.relationship("ABtest",
+                    secondary=user_abtest_admin,
+                    back_populates="admins")
+    sus_test_admin = db.relationship("Sus",
+                    secondary=user_sus_test_admin,
+                    back_populates="admins")
+    mos_test_admin = db.relationship("Mos",
+                    secondary=user_mos_test_admin,
+                    back_populates="admins")    
 
     def get_url(self):
         return url_for('user.user_detail', id=self.id)
@@ -323,6 +351,36 @@ class User(db.Model, UserMixin):
             'age': self.age,
             'dialect': self.dialect}
 
+    def is_admin_or_organiser_of_abtest(self, abtest_id):
+        return abtest_id in self.get_abtest_ids or self.is_admin()
+
+    @property
+    def get_abtest_ids(self):
+        ids = []
+        for ab in self.abtest_admin:
+            ids.append(ab.id)
+        return ids
+    
+    def is_admin_or_organiser_of_mos(self, mos_id):
+        return mos_id in self.get_mos_ids or self.is_admin()
+
+    @property
+    def get_mos_ids(self):
+        ids = []
+        for m in self.mos_test_admin:
+            ids.append(m.id)
+        return ids
+
+    def is_admin_or_organiser_of_abtest(self, sus_id):
+        return sus_id in self.get_sus_ids or self.is_admin()
+
+    @property
+    def get_sus_ids(self):
+        ids = []
+        for s in self.sus_test_admin:
+            ids.append(s.id)
+        return ids
+
 
 class Mos(BaseModel, db.Model):
     __tablename__ = 'Mos'
@@ -343,6 +401,18 @@ class Mos(BaseModel, db.Model):
         "MosInstance", lazy='joined', backref="mos",
         cascade='all, delete, delete-orphan')
     num_participants = db.Column(db.Integer, default=0)
+    admins = db.relationship(
+        "User",
+        secondary=user_mos_test_admin,
+        back_populates="mos_test_admin")
+
+
+        
+    def is_user_admin(self, user_id):
+        for i in self.admins:
+            if i.id == user_id:
+                return True
+        return False
 
     def getAllRatings(self):
         ratings = []
@@ -454,7 +524,7 @@ class Mos(BaseModel, db.Model):
 
     @property
     def url(self):
-        return url_for('mos.mos_detail', id=self.id)
+        return url_for('mos.mos_detail', mos_id=self.id)
 
     @property
     def printable_id(self):
@@ -631,6 +701,10 @@ class ABtest(BaseModel, db.Model):
         "ABTuple", lazy='joined', backref="ABtest",
         cascade='all, delete, delete-orphan')
     num_participants = db.Column(db.Integer, default=0)
+    admins = db.relationship(
+        "User",
+        secondary=user_abtest_admin,
+        back_populates="abtest_admin")
 
     def does_tuple_exist(self, first_id, second_id, ref_id=None):
         for t in self.ABtest_tuples:
@@ -640,6 +714,13 @@ class ABtest(BaseModel, db.Model):
             else:
                 if first_id == t.ab_instance_first_id and second_id == t.ab_instance_second_id and ref_id == t.ab_instance_referance_id:
                     return True
+        return False
+
+
+    def is_user_admin(self, user_id):
+        for i in self.admins:
+            if i.id == user_id:
+                return True
         return False
 
     def getAllRatings(self):
@@ -692,12 +773,15 @@ class ABtest(BaseModel, db.Model):
             "utterance_idx",
             "first_clip_id",
             "first_clip_voice_idx",
+            "first_clip_model_idx",
             "first_clip_file_name",
             "second_clip_id",
             "second_clip_voice_idx",
+            "second_clip_model_idx",
             "second_clip_file_name",
             "reference_clip_id",
             "reference_clip_voice_idx",
+            "reference_clip_model_idx",
             "reference_clip_file_name",
             "user_id",
             "user_name",
@@ -715,12 +799,15 @@ class ABtest(BaseModel, db.Model):
                     obj.utterance_idx if obj.utterance_idx else "",
                     obj.first.id if obj.first.id else "",
                     obj.first.voice_idx if obj.first.voice_idx else "",
+                    obj.first.model_idx if obj.first.model_idx else "",
                     obj.first.custom_recording.original_fname if obj.first.custom_recording.original_fname else "",
                     obj.second.id if obj.second.id else "",
                     obj.second.voice_idx if obj.second.voice_idx else "",
+                    obj.second.model_idx if obj.second.model_idx else "",
                     obj.second.custom_recording.original_fname if obj.second.custom_recording.original_fname else "",
                     obj.ref.id if obj.ref and obj.ref.id else "",
                     obj.ref.voice_idx if obj.ref and obj.ref.voice_idx else "",
+                    obj.ref.model_idx if obj.ref and obj.ref.model_idx else "",
                     obj.ref.custom_recording.original_fname if obj.ref and obj.ref.custom_recording.original_fname else "",
                     rating.user_id if rating.user_id else "",
                     rating.user.name if rating.user and rating.user.name else "",
@@ -760,6 +847,89 @@ class ABtest(BaseModel, db.Model):
         return configurations
 
     @property
+    def get_model_voice_result_dict(self):
+        '''
+        Make dict that contains every comparison of model-voice
+        '''
+        model_voice_ratings = {}
+        for r in self.getAllRatings():
+            if r.rating == 0:
+                    continue
+            ab_tuple =r.ab_tuple
+            first_id = ab_tuple.first.model_idx
+            second_id = ab_tuple.second.model_idx
+
+            #add model to top layer
+            #if not (first_id in model_voice_ratings or second_id in model_voice_ratings):
+            #    model_voice_ratings[first_id] = {}
+            if not first_id in model_voice_ratings:
+                model_voice_ratings[first_id] = {}
+            if not second_id in model_voice_ratings:
+                model_voice_ratings[second_id] = {}
+                
+            if first_id in model_voice_ratings:
+                if not ab_tuple.first.voice_idx in model_voice_ratings[first_id]:
+                    model_voice_ratings[first_id][ab_tuple.first.voice_idx] = {}
+                #add for every other model and voice the score for easy lookup
+                
+                if not second_id in model_voice_ratings[first_id][ab_tuple.first.voice_idx]:
+                    model_voice_ratings[first_id][ab_tuple.first.voice_idx][second_id] = {}
+                
+                if not ab_tuple.second.voice_idx in model_voice_ratings[first_id][ab_tuple.first.voice_idx][second_id]:
+                    model_voice_ratings[first_id][ab_tuple.first.voice_idx][second_id][ab_tuple.second.voice_idx] = {'total': 0, 'positive': 0}
+                if r.rating == 1:
+                    model_voice_ratings[first_id][ab_tuple.first.voice_idx][second_id][ab_tuple.second.voice_idx]['positive'] += 1
+            
+                model_voice_ratings[first_id][ab_tuple.first.voice_idx][second_id][ab_tuple.second.voice_idx]['total'] += 1
+                
+                    
+
+            if second_id in model_voice_ratings:
+                if not ab_tuple.second.voice_idx in model_voice_ratings[second_id]:
+                    model_voice_ratings[second_id][ab_tuple.second.voice_idx] = {}
+                #add for every other model and voice the score for easy lookup
+                
+                if not first_id in model_voice_ratings[second_id][ab_tuple.second.voice_idx]:
+                    model_voice_ratings[second_id][ab_tuple.second.voice_idx][first_id] = {}
+                
+                if not ab_tuple.first.voice_idx in model_voice_ratings[second_id][ab_tuple.second.voice_idx][first_id]:
+                    model_voice_ratings[second_id][ab_tuple.second.voice_idx][first_id][ab_tuple.first.voice_idx] = {'total': 0, 'positive': 0}
+                
+                
+                if r.rating == 1:
+                    model_voice_ratings[second_id][ab_tuple.second.voice_idx][first_id][ab_tuple.first.voice_idx]['positive'] += 1
+            
+                model_voice_ratings[second_id][ab_tuple.second.voice_idx][first_id][ab_tuple.first.voice_idx]['total'] += 1
+        
+        
+        for model1 in model_voice_ratings:
+            model_v_model = {}
+            for voice1 in model_voice_ratings[model1]:
+                for model2 in model_voice_ratings[model1][voice1]:
+                    if model2 not in model_v_model:
+                        model_v_model[model2] = {'total': 0, 'positive': 0}
+                    model2_total = {'total': 0, 'positive': 0}
+                    for voice2 in model_voice_ratings[model1][voice1][model2]:
+                        model2_total['total'] += model_voice_ratings[model1][voice1][model2][voice2]['total']
+                        model2_total['positive'] += model_voice_ratings[model1][voice1][model2][voice2]['positive']
+                    model_voice_ratings[model1][voice1][model2]['summary'] = model2_total
+                    model_v_model[model2]['total'] += model2_total['total']
+                    model_v_model[model2]['positive'] += model2_total['positive']
+            model_voice_ratings[model1]['model_v_model'] = model_v_model
+            model_v_all = {'total': 0, 'positive': 0}
+            for model in model_v_model:
+                model_v_all['total'] += model_v_model[model]['total']
+                model_v_all['positive'] += model_v_model[model]['positive']
+            model_voice_ratings[model1]['model_v_all'] = model_v_all
+
+
+        return model_voice_ratings
+
+    def get_ratio_models(self, var1, var2):
+        return round((100*(var2/var1)), 2)
+    
+
+    @property
     def custom_tokens(self):
         tokens = []
         for m in self.mos_objects:
@@ -768,7 +938,7 @@ class ABtest(BaseModel, db.Model):
 
     @property
     def url(self):
-        return url_for('abtest.abtest_detail', id=self.id)
+        return url_for('abtest.abtest_detail', abtest_id=self.id)
 
     @property
     def printable_id(self):
@@ -865,6 +1035,15 @@ class ABInstance(BaseModel, db.Model):
         }
 
     @property
+    def num_ratings(self):
+        ratings = 0
+        for i in self.tuple_first:
+            ratings += i.num_ratings
+        for i in self.tuple_second:
+            ratings += i.num_ratings
+        return ratings
+
+    @property
     def ratings(self):
         ratings = []
         for i in self.tuple_first:
@@ -910,14 +1089,18 @@ class ABInstance(BaseModel, db.Model):
         picked, not_picked = self.ab_stats
         if picked + not_picked == 0:
             return 0
-        return picked / (picked + not_picked)
+        return round(picked / (picked + not_picked), 2)
+    
+    @property
+    def ab_percentage(self):
+        return round((100*self.ab_ratio), 2)
     
     @property
     def ab_ratio_inverse(self):
         picked, not_picked = self.ab_stats
         if picked + not_picked == 0:
             return 0
-        return 1 - (picked / (picked + not_picked))
+        return 1 - round(picked / (picked + not_picked), 2)
     
 
     @property
@@ -1035,7 +1218,7 @@ class ABTuple(BaseModel, db.Model):
 
     @property
     def ajax_edit_action(self):
-        return url_for('abtest.abtest_tuple_edit', id=self.id)
+        return url_for('abtest.abtest_tuple_edit', abtest_id=self.id)
 
     def get_dict(self):
         return {
@@ -1098,6 +1281,17 @@ class Sus(BaseModel, db.Model):
         "SusObject", lazy='joined', backref="sus",
         cascade='all, delete, delete-orphan')
     num_participants = db.Column(db.Integer, default=0)
+    admins = db.relationship(
+        "User",
+        secondary=user_sus_test_admin,
+        back_populates="sus_test_admin")
+
+
+    def is_user_admin(self, user_id):
+        for i in self.admins:
+            if i.id == user_id:
+                return True
+        return False
 
     def getAllUsers(self):
         ratings = self.getAllRatings()
@@ -1129,7 +1323,7 @@ class Sus(BaseModel, db.Model):
 
     @property
     def url(self):
-        return url_for('sus.sus_detail', id=self.id)
+        return url_for('sus.sus_detail', sus_id=self.id)
 
     @property
     def printable_id(self):

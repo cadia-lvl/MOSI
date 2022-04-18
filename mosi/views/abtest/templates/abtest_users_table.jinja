@@ -6,12 +6,6 @@
         <th>
             Fjöldi greininga
         </th>
-        <th>
-            Meðaleinkunn
-        </th>
-        <th>
-            Staðalfrávik
-        </th>
         <th class="text-center">
             {{macros.btn_icon('trash', 'r')}}
         </th>
@@ -21,9 +15,7 @@
             <tr>
                 <td><a href={{user.user.get_url()}}>{{user.user.get_printable_name()}}</a></td>
                 <td>{{user.total}}</td>
-                <td>{{user.mean}}</td>
-                <td>{{user.std}}</td>
-                <td class="float-left">
+                <td class="d-flex justify-content-center">
                     <button id="deleteButton" name="{{user.user.id}}" onClick="deleteUserRatingsButton(name)" class="btn btn-secondary btn-sm text-danger float-right" type="button" data-toggle='modal', data-target='#deleteUserRatingsModal'>
                         {{macros.btn_icon('trash', 'r')}} Eyða
                     </button>

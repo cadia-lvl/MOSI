@@ -43,7 +43,25 @@
                 </td>
                 <td>{{abtest.picked}}</td>
                 <td>{{abtest.not_picked}}</td>
-                <td>{{abtest.ab_ratio}}</td>
+                <td>
+
+                {% if abtest.ab_percentage > 65 %}
+                    <div class="progress">
+                        <div class="progress-bar bg-success" role="progressbar" style="width:{{abtest.ab_percentage}}%"></div>
+                    </div>                
+                {% elif  abtest.ab_percentage > 32 %}
+                    <div class="progress">
+                        <div class="progress-bar bg-warning" role="progressbar" style="width:{{abtest.ab_percentage}}%"></div>
+                    </div>
+
+                {% else %}
+                    <div class="progress">
+                        <div class="progress-bar bg-danger" role="progressbar" style="width:{{abtest.ab_percentage}}%"></div>
+                    </div>   
+                {% endif %}
+                    
+                </td>
+                <td>{{abtest.ab_percentage}}%</td>
             </tr>
         {% endfor %}
     </tbody>

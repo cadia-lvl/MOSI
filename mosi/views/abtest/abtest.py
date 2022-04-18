@@ -10,7 +10,8 @@ import time
 from flask import (Blueprint, Response, send_from_directory, request,
                    render_template, flash, redirect, url_for)
 from flask import current_app as app
-from flask_security import login_required, roles_accepted, current_user
+from flask_security import login_required, current_user, roles_accepted
+from mosi.decorators import (organiser_of_abtest_or_admin)
 from sqlalchemy.exc import IntegrityError
 
 from mosi.models import (ABInstance, User, ABtest, ABTuple,
@@ -26,111 +27,38 @@ abtest = Blueprint(
 
 @abtest.route('/abtest/')
 @login_required
-@roles_accepted('admin')
+@roles_accepted('admin', 'organiser')
 def abtest_list():
-    page = int(request.args.get('page', 1))
-    abtest_list = ABtest.query.order_by(
-            resolve_order(
-                ABtest,
-                request.args.get('sort_by', default='created_at'),
-                order=request.args.get('order', default='desc')))\
-        .paginate(page, per_page=app.config['MOS_PAGINATION'])
+    if current_user.is_admin():
+        page = int(request.args.get('page', 1))
+        abtest_list = ABtest.query.order_by(
+                resolve_order(
+                    ABtest,
+                    request.args.get('sort_by', default='created_at'),
+                    order=request.args.get('order', default='desc')))\
+            .paginate(page, per_page=app.config['MOS_PAGINATION'])
+    else:
+        abtest_ids = current_user.get_abtest_ids
+        page = int(request.args.get('page', 1))
+        abtest_list = ABtest.query.filter(ABtest.id.in_(abtest_ids)).order_by(
+                resolve_order(
+                    ABtest,
+                    request.args.get('sort_by', default='created_at'),
+                    order=request.args.get('order', default='desc')))\
+            .paginate(page, per_page=app.config['MOS_PAGINATION'])
     return render_template(
         'abtest_list.jinja',
         abtest_list=abtest_list,
         section='abtest')
 
 
-@abtest.route('/abtest/collection/none')
+
+@abtest.route('/abtest/<int:abtest_id>', methods=['GET', 'POST'])
 @login_required
-@roles_accepted('admin')
-def abtest_collection_none():
-    page = int(request.args.get('page', 1))
-    collection = json.dumps({'name': 'Óháð söfnun', 'id': 0})
-    abtest_list = ABtest.query.filter(ABtest.collection_id == None).order_by(
-            resolve_order(
-                ABtest,
-                request.args.get('sort_by', default='created_at'),
-                order=request.args.get('order', default='desc')))\
-        .paginate(page, per_page=app.config['MOS_PAGINATION'])
-    return render_template(
-        'abtest_no_collection_list.jinja',
-        abtest_list=abtest_list,
-        collection=collection,
-        section='abtest')
-
-@abtest.route('/abtest/create_tuple/<int:ab_id>/<int:first_id>/<int:second_id>/<int:ref_id>')
-@abtest.route('/abtest/create_tuple/<int:ab_id>/<int:first_id>/<int:second_id>')
-@login_required
-@roles_accepted('admin')
-def create_tuple(ab_id, first_id, second_id, ref_id=None):
-    abtest = ABtest.query.get(ab_id)
-    first = ABInstance.query.get(first_id)
-    second = ABInstance.query.get(second_id)
-    ref = ABInstance.query.get(ref_id) if ref_id else None
-    abtuple = None
-
-    if abtest and first and second:
-        if first.abtest_id == abtest.id and second.abtest_id == abtest.id:
-            if first.id != second.id:
-                if ref and ref.id != first.id and ref.id != second.id and ref.abtest_id == abtest.id:
-                    abtuple = ABTuple(abtest.id, first_id, second_id, ref_id)
-                else:
-                    abtuple = ABTuple(abtest.id, first_id, second_id, None)
-
-    existing_tuple = ABTuple.query.filter(
-        ABTuple.abtest_id == ab_id,
-        ABTuple.ab_instance_first_id == first_id,
-        ABTuple.ab_instance_second_id == second_id,
-        ABTuple.ab_instance_referance_id == ref_id).first()
-
-    if existing_tuple:
-        flash("Ekki hægt að bæta við línu sem hefur verið bætt við áður", category='warning')
-
-    elif abtuple:
-        db.session.add(abtuple)
-        db.session.commit()
-        flash("Línu var bætt við", category='success')
-    else:
-        flash("Ekki gekk að bæta við línu", category='warning')
-    response = {}
-    return Response(json.dumps(response), status=200)
-    #return redirect(url_for('abtest.abtest_detail', id=ab_id))
-        
-@abtest.route('/abtest/tuple/<int:id>/delete/', methods=['GET'])
-@login_required
-@roles_accepted('admin')
-def delete_abtest_tuple(id):
-    tuple = ABTuple.query.get(id)
-    abtest_id = tuple.abtest_id
-    did_delete, errors = delete_abtest_user_ratings(tuple)
-    if did_delete:
-        flash("Línu var eytt", category='success')
-    else:
-        flash("Ekki gekk að eyða línu rétt", category='warning')
-        print(errors)
-    return redirect(url_for('abtest.abtest_detail', id=abtest_id))
-    
-
-@abtest.route('/abtest/user_ratings/<int:user_id>/abtest/<int:abtest_id>/delete/', methods=['GET'])
-@login_required
-@roles_accepted('admin')
-def delete_ratings_by_user(abtest_id, user_id):
-    did_delete, errors = delete_abtest_user_ratings(user_id, abtest_id)
-    if did_delete:
-        flash("Notenda einkunnum var eytt", category='success')
-    else:
-        flash("Ekki gekk að eyða línu rétt", category='warning')
-        print(errors)
-    
-    return redirect(url_for('abtest.abtest_results', id=abtest_id))
-
-
-@abtest.route('/abtest/<int:id>', methods=['GET', 'POST'])
-@login_required
-@roles_accepted('admin')
-def abtest_detail(id):
-    abtest = ABtest.query.get(id)
+#@roles_accepted('admin')
+@organiser_of_abtest_or_admin
+def abtest_detail(abtest_id):
+    abtest = ABtest.query.get(abtest_id)
     form = ABtestUploadForm()
     select_all_forms = [
         ABtestSelectAllForm(select=True),
@@ -145,7 +73,7 @@ def abtest_detail(id):
                     zip_name = zip_file.filename[:-4]
                     csv_name = '{}/index.csv'.format(zip_name)
                     successfully_uploaded = save_custom_wav_for_abtest(
-                        zip, zip_name, csv_name, abtest, id)
+                        zip, zip_name, csv_name, abtest, abtest_id)
                     if len(successfully_uploaded) > 0:
                         flash("Tókst að hlaða upp {} setningum.".format(
                             len(successfully_uploaded)),
@@ -154,7 +82,7 @@ def abtest_detail(id):
                         flash(
                             "Ekki tókst að hlaða upp neinum setningum.",
                             category="warning")
-                return redirect(url_for('abtest.abtest_detail', id=id))
+                return redirect(url_for('abtest.abtest_detail', abtest_id=abtest_id))
             else:
                 flash(
                     "Ekki tókst að hlaða inn skrá. Eingögnu hægt að hlaða inn skrám á stöðluðu formi.",
@@ -164,7 +92,7 @@ def abtest_detail(id):
                 "Villa í formi, athugaðu að rétt sé fyllt inn og reyndu aftur.",
                 category="danger")
 
-    abtest_list = ABInstance.query.filter(ABInstance.abtest_id == id).order_by(
+    abtest_list = ABInstance.query.filter(ABInstance.abtest_id == abtest_id).order_by(
             resolve_order(
                 ABInstance,
                 request.args.get('sort_by', default='id'),
@@ -194,7 +122,7 @@ def abtest_detail(id):
                     additional.append(p+[ref_idx])
         sentence_groups[key]['info']['perms'] = sentence_groups[key]['info']['perms'] + additional
 
-    abtest_tuples = ABTuple.query.filter(ABTuple.abtest_id == id).all()
+    abtest_tuples = ABTuple.query.filter(ABTuple.abtest_id == abtest_id).all()
     n_tuples_selected = 0
     for ab in abtest_tuples:
         ab.selection_form = ABtestItemSelectionForm(obj=ab)
@@ -214,24 +142,89 @@ def abtest_detail(id):
         section='abtest')
 
 
-@abtest.route('/abtest/<int:id>/edit/detail', methods=['GET', 'POST'])
+@abtest.route('/abtest/create_tuple/<int:abtest_id>/<int:first_id>/<int:second_id>/<int:ref_id>')
+@abtest.route('/abtest/create_tuple/<int:abtest_id>/<int:first_id>/<int:second_id>')
 @login_required
-@roles_accepted('admin')
-def abtest_edit_detail(id):
-    abtest = ABtest.query.get(id)
+@organiser_of_abtest_or_admin
+def create_tuple(abtest_id, first_id, second_id, ref_id=None):
+    abtest = ABtest.query.get(abtest_id)
+    first = ABInstance.query.get(first_id)
+    second = ABInstance.query.get(second_id)
+    ref = ABInstance.query.get(ref_id) if ref_id else None
+    abtuple = None
+
+    if abtest and first and second:
+        if first.abtest_id == abtest.id and second.abtest_id == abtest.id:
+            if first.id != second.id:
+                if ref and ref.id != first.id and ref.id != second.id and ref.abtest_id == abtest.id:
+                    abtuple = ABTuple(abtest.id, first_id, second_id, ref_id)
+                else:
+                    abtuple = ABTuple(abtest.id, first_id, second_id, None)
+
+    existing_tuple = ABTuple.query.filter(
+        ABTuple.abtest_id == abtest_id,
+        ABTuple.ab_instance_first_id == first_id,
+        ABTuple.ab_instance_second_id == second_id,
+        ABTuple.ab_instance_referance_id == ref_id).first()
+
+    if existing_tuple:
+        flash("Ekki hægt að bæta við línu sem hefur verið bætt við áður", category='warning')
+
+    elif abtuple:
+        db.session.add(abtuple)
+        db.session.commit()
+        flash("Línu var bætt við", category='success')
+    else:
+        flash("Ekki gekk að bæta við línu", category='warning')
+    response = {}
+    return Response(json.dumps(response), status=200)
+    #return redirect(url_for('abtest.abtest_detail', abtest_id=abtest_id))
+        
+@abtest.route('/abtest/<int:abtest_id>/tuple/<int:id>/delete/', methods=['GET'])
+@login_required
+@organiser_of_abtest_or_admin
+def delete_abtest_tuple(abtest_id, id):
+    ab_tuple = ABTuple.query.get(id)
+    did_delete, errors = delete_abtest_tuple_db(ab_tuple)
+    if did_delete:
+        flash("Línu var eytt", category='success')
+    else:
+        flash("Ekki gekk að eyða línu rétt", category='warning')
+        print(errors)
+    return redirect(url_for('abtest.abtest_detail', abtest_id=abtest_id))
+    
+
+@abtest.route('/abtest/user_ratings/<int:user_id>/abtest/<int:abtest_id>/delete/', methods=['GET'])
+@login_required
+@organiser_of_abtest_or_admin
+def delete_ratings_by_user(abtest_id, user_id):
+    did_delete, errors = delete_abtest_user_ratings(user_id, abtest_id)
+    if did_delete:
+        flash("Notenda einkunnum var eytt", category='success')
+    else:
+        flash("Ekki gekk að eyða línu rétt", category='warning')
+        print(errors)
+    
+    return redirect(url_for('abtest.abtest_results', abtest_id=abtest_id))
+
+@abtest.route('/abtest/<int:abtest_id>/edit/detail', methods=['GET', 'POST'])
+@login_required
+@organiser_of_abtest_or_admin
+def abtest_edit_detail(abtest_id):
+    abtest = ABtest.query.get(abtest_id)
     form = ABtestDetailForm(request.form, obj=abtest)
     if request.method == "POST":
         if form.validate():
             form.populate_obj(abtest)
             db.session.commit()
-            return redirect(url_for("abtest.abtest_detail", id=abtest.id))
+            return redirect(url_for("abtest.abtest_detail", abtest_id=abtest.id))
     
     form.show_text_in_test.data = abtest.show_text_in_test
     return render_template(
         'forms/model.jinja',
         form=form,
         type='edit',
-        action=url_for('abtest.abtest_edit_detail', id=abtest.id))
+        action=url_for('abtest.abtest_edit_detail', abtest_id=abtest_id))
 
 
 @abtest.route('/abtest/take_test/<uuid:abtest_uuid>/', methods=['GET', 'POST'])
@@ -342,28 +335,29 @@ def abtest_test(id, uuid):
         section='abtest')
 
 
-@abtest.route('/abtest/<int:id>/abtest_results', methods=['GET', 'POST'])
+@abtest.route('/abtest/<int:abtest_id>/abtest_results', methods=['GET', 'POST'])
 @login_required
-@roles_accepted('admin')
-def abtest_results(id):
-    abtest = ABtest.query.get(id)
-    abtest_list = ABInstance.query.filter(ABInstance.abtest_id == id).order_by(
+@organiser_of_abtest_or_admin
+def abtest_results(abtest_id):
+    abtest = ABtest.query.get(abtest_id)
+    abtest_list = ABInstance.query.filter(ABInstance.abtest_id == abtest_id).order_by(
             resolve_order(
                 ABInstance,
                 request.args.get('sort_by', default='id'),
                 order=request.args.get('order', default='desc'))).all()
+    abtest_list = [ab for ab in abtest_list if ab.num_ratings > 0]
+    print(1)
     ratings = abtest.getAllRatings()
-    print(ratings)
     max_placement = 1
     for j in ratings:
         if j.placement > max_placement:
             max_placement = j.placement
-
+    print(2)
     if len(ratings) == 0:
-        return redirect(url_for('abtest.abtest_detail', id=abtest.id))
+        return redirect(url_for('abtest.abtest_detail', abtest_id=abtest.id))
     user_ids = abtest.getAllUsers()
     users = User.query.filter(User.id.in_(user_ids)).all()
-
+    print(3)
     all_rating_stats = []
     placement = [0]*max_placement
     p_counter = [0]*max_placement
@@ -375,6 +369,7 @@ def abtest_results(id):
     for i in range(len(placement)):
         if p_counter[i] != 0 and placement[i] != 0:
             placement[i] = placement[i]/p_counter[i]
+    print(4)
     placement_info = {
         'placement': placement,
         'p_nums': list(range(1, len(abtest_list)))}
@@ -398,11 +393,13 @@ def abtest_results(id):
         abtest_stats['not_picked'].append(ab_not_picked)
         abtest_stats['ratio'].append(m.ab_ratio)
         abtest_stats['ratio_inverse'].append(m.ab_ratio_inverse)
+    print(5)
     users_list = []
     users_graph_json = []
+    #this takes a long time
     for u in users:
         user_ratings = abtest.getAllUserRatings(u.id)
-        ratings_stats = []
+        '''ratings_stats = []
         for r in user_ratings:
             ratings_stats.append(r.rating)
         ratings_stats = np.array(ratings_stats)
@@ -415,19 +412,21 @@ def abtest_results(id):
                 abtest_ratings_per_user.append(m.getUserRating(u.id))
         user_ratings = {
             "username": u.get_printable_name(),
-            "ratings": abtest_ratings_per_user}
+            "ratings": abtest_ratings_per_user}'''
         temp = {
             'user': u,
-            'mean': round(np.mean(ratings_stats), 2),
-            'std': round(np.std(ratings_stats), 2),
-            'total': len(ratings_stats),
-            'user_ratings': abtest_ratings_per_user}
-        temp2 = {
+            #'mean': round(np.mean(ratings_stats), 2),
+            #'std': round(np.std(ratings_stats), 2),
+            'total': len(user_ratings),
+            #'user_ratings': abtest_ratings_per_user
+        }
+        '''temp2 = {
             'user_ratings': user_ratings}
+        '''
         users_list.append(temp)
-        users_graph_json.append(temp2)
-
-    users_list = sorted(users_list, key=itemgetter('mean'))
+        #users_graph_json.append(temp2)
+    print(6)
+    users_list = sorted(users_list, key=itemgetter('total'))
 
     all_usernames_list = []
     user_name_dict = {}
@@ -438,7 +437,7 @@ def abtest_results(id):
         user_name_dict[u['user_ratings']['username']]['selectiveRatings'] = [u['user_ratings']['ratings'][i] for i in indices]
         user_name_dict[u['user_ratings']['username']]['selectiveABtestIds'] = [abtest_stats['names'][i] for i in indices]
         user_name_dict[u['user_ratings']['username']]['selectiveABtestMeans'] = [abtest_stats['means'][i] for i in indices]
-
+    print(7)
     # Average per voice index
     ratings_by_voice = abtest.getResultsByVoice()
     per_voice_data = {
@@ -450,7 +449,10 @@ def abtest_results(id):
         per_voice_data["x"].append(voice_idx)
         per_voice_data["y"].append(round(np.mean([r.rating for r in ratings]), 2))
         per_voice_data["std"].append(round(np.std([r.rating for r in ratings]), 2))
-    print(ratings)
+    print(8)
+    model_voice_data = abtest.get_model_voice_result_dict
+    print(9)
+
     return render_template(
         'abtest_results.jinja',
         abtest=abtest,
@@ -464,15 +466,16 @@ def abtest_results(id):
         users_graph_json=users_graph_json,
         per_voice_data=per_voice_data,
         abtest_list=abtest_list,
+        model_voice_data=model_voice_data,
         section='abtest'
     )
 
 
-@abtest.route('/abtest/<int:id>/abtest_results/download', methods=['GET'])
+@abtest.route('/abtest/<int:abtest_id>/abtest_results/download', methods=['GET'])
 @login_required
-@roles_accepted('admin')
-def download_abtest_data(id):
-    abtest = ABtest.query.get(id)
+@organiser_of_abtest_or_admin
+def download_abtest_data(abtest_id):
+    abtest = ABtest.query.get(abtest_id)
     response_lines = [
         ";".join(map(str, line)) for line in abtest.getResultData()
     ]
@@ -485,13 +488,13 @@ def download_abtest_data(id):
                  "attachment; filename={}".format(filename)})
 
 
-@abtest.route('/abtest/<int:id>/stream_zip')
+@abtest.route('/abtest/<int:abtest_id>/stream_zip')
 @login_required
-@roles_accepted('admin')
-def stream_abtest_zip(id):
-    abtest = ABtest.query.get(id)
+@organiser_of_abtest_or_admin
+def stream_abtest_zip(abtest_id):
+    abtest = ABtest.query.get(abtest_id)
     abtest_list = ABInstance.query\
-        .filter(ABInstance.abtest_id == id)\
+        .filter(ABInstance.abtest_id == abtest_id)\
         .filter(ABInstance.is_synth == False).order_by(
             resolve_order(
                 ABInstance,
@@ -519,7 +522,7 @@ def stream_abtest_zip(id):
 
 @abtest.route('/abtest/stream_abtest_demo')
 @login_required
-@roles_accepted('admin')
+@roles_accepted('admin', 'organiser')
 def stream_abtest_index_demo():
     other_dir = app.config["OTHER_DIR"]
     try:
@@ -532,9 +535,8 @@ def stream_abtest_index_demo():
         return redirect(request.referrer)
 
 
-@abtest.route('/abtest/post_abtest_rating/<int:id>', methods=['POST'])
-def post_abtest_rating(id):
-    abtest_id = id
+@abtest.route('/abtest/post_abtest_rating/<int:abtest_id>', methods=['POST'])
+def post_abtest_rating(abtest_id):
     try:
         abtest_id = save_abtest_ratings(request.form, request.files)
     except Exception as error:
@@ -551,18 +553,18 @@ def post_abtest_rating(id):
     flash("AB próf klárað", category='success')
     if current_user.is_anonymous:
         return Response(
-            url_for('abtest.abtest_done', id=abtest_id), status=200)
+            url_for('abtest.abtest_done', abtest_id=abtest_id), status=200)
     else:
         return Response(
-            url_for('abtest.abtest_detail', id=abtest_id), status=200)
+            url_for('abtest.abtest_detail', abtest_id=abtest_id), status=200)
 
 
-@abtest.route('/abtest/tuple/<int:id>/edit', methods=['POST'])
+@abtest.route('/abtest/tuple/<int:abtest_id>/edit', methods=['POST'])
 @login_required
-@roles_accepted('admin')
-def abtest_tuple_edit(id):
+@organiser_of_abtest_or_admin
+def abtest_tuple_edit(abtest_id):
     try:
-        tuple = ABTuple.query.get(id)
+        tuple = ABTuple.query.get(abtest_id)
         form = ABtestItemSelectionForm(request.form, obj=tuple)
         form.populate_obj(tuple)
         db.session.commit()
@@ -576,51 +578,51 @@ def abtest_tuple_edit(id):
         return Response(errorMessage, status=500)
 
 
-@abtest.route('/abtest/<int:id>/select_all', methods=['POST'])
+@abtest.route('/abtest/<int:abtest_id>/select_all', methods=['POST'])
 @login_required
-@roles_accepted('admin')
-def abtest_select_all(id):
+@organiser_of_abtest_or_admin
+def abtest_select_all(abtest_id):
     try:
         form = ABtestSelectAllForm(request.form)
         select = True if form.data['select'] == 'True' else False
         abtest_list = ABTuple.query\
-            .filter(ABTuple.abtest_id == id).all()
+            .filter(ABTuple.abtest_id == abtest_id).all()
         for ab in abtest_list:
             ab.selected = select
         db.session.commit()
-        return redirect(url_for('abtest.abtest_detail', id=id))
+        return redirect(url_for('abtest.abtest_detail', abtest_id=abtest_id))
     except Exception as error:
         print(error)
         flash("Ekki gekk að merkja alla", category='warning')
-    return redirect(url_for('abtest.abtest_detail', id=id))
+    return redirect(url_for('abtest.abtest_detail', abtest_id=abtest_id))
 
 
-@abtest.route('/abtest/instances/<int:id>/delete/', methods=['GET'])
+@abtest.route('/abtest/<int:abtest_id>/instances/<int:id>/delete/', methods=['GET'])
 @login_required
-@roles_accepted('admin')
-def delete_abtest_instance(id):
+@organiser_of_abtest_or_admin
+def delete_abtest_instance(abtest_id, id):
     instance = ABInstance.query.get(id)
-    abtest_id = instance.abtest_id
     did_delete, errors = delete_abtest_instance_db(instance)
     if did_delete:
         flash("Línu var eytt", category='success')
     else:
         flash("Ekki gekk að eyða línu rétt", category='warning')
         print(errors)
-    return redirect(url_for('abtest.abtest_detail', id=abtest_id))
+    return redirect(url_for('abtest.abtest_detail', abtest_id=abtest_id))
 
 
 @abtest.route('/abtest/create', methods=['GET', 'POST'])
 @login_required
-@roles_accepted('admin')
+@roles_accepted('admin', 'organiser')
 def abtest_create():
     try:
         abtest = ABtest()
         abtest.uuid = uuid.uuid4()
         db.session.add(abtest)
+        abtest.admins.append(current_user)
         db.session.commit()
         flash("Nýrri AB prufu bætt við", category="success")
-        return redirect(url_for('abtest.abtest_detail', id=abtest.id))
+        return redirect(url_for('abtest.abtest_detail', abtest_id=abtest.id))
     except Exception as error:
         flash("Error creating AB test.", category="danger")
         app.logger.error("Error creating MOS {}\n{}".format(
@@ -629,7 +631,7 @@ def abtest_create():
 
 
 
-@abtest.route('/abtest-done/<int:id>', methods=['GET'])
-def abtest_done(id):
-    abtest = ABtest.query.get(id)
+@abtest.route('/abtest-done/<int:abtest_id>', methods=['GET'])
+def abtest_done(abtest_id):
+    abtest = ABtest.query.get(abtest_id)
     return render_template("abtest_done.jinja", abtest=abtest)

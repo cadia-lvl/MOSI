@@ -22,7 +22,7 @@
             {{macros.btn_icon('upload', 'r')}}
             Hlaða upp
         </button>
-        <a href='{{url_for("sus.stream_SUS_zip", id=sus.id)}}' class='btn btn-primary btn-sm float-right mr-2 mt-2'>
+        <a href='{{url_for("sus.stream_SUS_zip", sus_id=sus.id)}}' class='btn btn-primary btn-sm float-right mr-2 mt-2'>
             {{macros.btn_icon('download', 'r')}}
             Sækja upptökur
         </a>
@@ -48,18 +48,7 @@
                 Hlekkur á próf
             </a>
         {% endif %}
-        {% if ratings | length  > 0%}
-            <a class='btn btn-secondary btn-sm text-success float-right mt-2 mr-2' href='{{url_for("sus.sus_results", id=sus.id)}}'>
-                {{macros.btn_icon('chart-bar', 'r')}}
-                Skoða niðurstöður
-            </a>
-        {% else %}
-            <a class='btn btn-secondary btn-sm text-success float-right mt-2 mr-2 disabled' href='{{url_for("sus.sus_results", id=sus.id)}}'>
-                {{macros.btn_icon('chart-bar', 'r')}}
-                Skoða niðurstöður
-            </a>
-        {% endif %}
-        <a class='btn btn-secondary btn-sm text-success float-right mt-2 mr-2' href='{{url_for("sus.sus_edit_detail", id=sus.id)}}'>
+        <a class='btn btn-secondary btn-sm text-success float-right mt-2 mr-2' href='{{url_for("sus.sus_edit_detail", sus_id=sus.id)}}'>
             {{macros.btn_icon('edit', 'r')}}
             Breyta stillingum
         </a>
@@ -150,7 +139,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
-                <a id='confirmationButton' href='{{url_for("sus.delete_sus_instance", id=1)}}' class='btn btn-danger'>
+                <a id='confirmationButton' href='{{url_for("sus.delete_sus_instance", sus_instance_id=-1)}}' class='btn btn-danger'>
                     Eyða
                     {{macros.btn_icon('trash', 'l')}}
                 </a>
@@ -165,7 +154,7 @@
     {{super()}}
     <script>
         function deletebutton(id){
-            $('#deleteModal #confirmationButton').attr('href', '{{url_for("sus.delete_sus_instance", id=1)}}'.replace("1", id));
+            $('#deleteModal #confirmationButton').attr('href', '{{url_for("sus.delete_sus_instance", sus_instance_id=-1)}}'.replace("-1", id));
         }
 
 

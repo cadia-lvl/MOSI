@@ -3,14 +3,14 @@ import uuid
 
 from flask import redirect, flash, url_for, request, render_template, Blueprint
 from flask import current_app as app
-from flask_security import login_required, roles_accepted
+from flask_security import login_required, roles_accepted, current_user
 from flask_security.utils import hash_password
 
 from sqlalchemy import or_
 
 from mosi.models import User, Role, db
 from mosi.db import resolve_order
-from mosi.forms import (UserEditForm, ExtendedRegisterForm, RoleForm, VerifierRegisterForm)
+from mosi.forms import (UserEditForm, ExtendedRegisterForm, RoleForm, OrganiserRegisterForm, VerifierRegisterForm)
 
 user = Blueprint(
     'user', __name__, template_folder='templates')
@@ -34,7 +34,7 @@ def user_list():
 
 @user.route('/users/<int:id>/')
 @login_required
-@roles_accepted('admin', 'Notandi', 'test_partitipant')
+@roles_accepted('admin', 'Notandi', 'test_partitipant', 'organiser')
 def user_detail(id):
     page = int(request.args.get('page', 1))
     user = User.query.get(id)
@@ -42,6 +42,13 @@ def user_detail(id):
         "user.jinja",
         user=user,
         section='user')
+
+@user.route('/heimasida/', methods=['GET', 'POST'])
+@login_required
+def current_user_detail():
+    if not current_user.is_authenticated:
+                return redirect(url_for('login'))
+    return redirect(url_for('user.user_detail', id=current_user.id))
 
 
 @user.route('/users/<int:id>/times', methods=['GET'])
@@ -183,6 +190,37 @@ def verifier_create():
         form=form,
         type='create',
         action=url_for('user.verifier_create'),
+        section='user')
+
+@user.route('/users/organiser_create', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def organiser_create():
+    form = VerifierRegisterForm(request.form)
+    if request.method == 'POST' and form.validate():
+        try:
+            new_user = app.user_datastore.create_user(
+                name=form.name.data,
+                email=form.email.data,
+                password=hash_password(form.password.data),
+                uuid=uuid.uuid4(),
+                roles=['organiser'])
+            form.populate_obj(new_user)
+            db.session.commit()
+            flash("Nýr skipuleggjandi var búinn til", category='success')
+            return redirect(url_for('user.user_list'))
+
+        except Exception as error:
+            app.logger.error('Error creating a user : {}\n{}'.format(
+                error, traceback.format_exc()))
+            flash(
+                "Villa kom upp við að búa til nýjan greini",
+                category='warning')
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        type='create',
+        action=url_for('user.organiser_create'),
         section='user')
 
 

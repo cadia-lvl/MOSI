@@ -424,7 +424,6 @@ def delete_mos_instance_db(instance):
 def delete_abtest_instance_db(instance):
     errors = []
     try:
-        os.remove(instance.custom_token.get_path())
         os.remove(instance.custom_recording.get_path())
     except Exception as error:
         errors.append("Remove from disk error")

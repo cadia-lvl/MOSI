@@ -1,0 +1,47 @@
+<table class='table'>    
+    <thead>
+        <th>
+            Módel
+        </th>
+        <th>
+            Fjöldi einkunna
+        </th>
+        <th>
+            Valin
+        </th>
+        <th>
+            Ekki valin
+        </th>
+        <th>
+            Hlutfall
+        </th>
+    </thead>
+    </thead>
+    <tbody>
+        {% for model, value in model_voice_data.items() %}
+            <tr>
+                <td>{{model}}</td>
+                <td>{{value['model_v_all']['total']}}</td>
+                <td>{{value['model_v_all']['positive']}}</td>
+                <td>{{value['model_v_all']['total'] - value['model_v_all']['positive'] }}</td>
+                <td>
+                {% if abtest.get_ratio_models(value['model_v_all']['total'], value['model_v_all']['positive']) > 65 %}
+                    <div class="progress">
+                        <div class="progress-bar bg-success" role="progressbar" style="width:{{abtest.get_ratio_models(value['model_v_all']['total'], value['model_v_all']['positive'])}}%"></div>
+                    </div>                
+                {% elif  abtest.get_ratio_models(value['model_v_all']['total'], value['model_v_all']['positive']) > 32 %}
+                    <div class="progress">
+                        <div class="progress-bar bg-warning" role="progressbar" style="width:{{abtest.get_ratio_models(value['model_v_all']['total'], value['model_v_all']['positive'])}}%"></div>
+                    </div>
+
+                {% else %}
+                    <div class="progress">
+                        <div class="progress-bar bg-danger" role="progressbar" style="width:{{abtest.get_ratio_models(value['model_v_all']['total'], value['model_v_all']['positive'])}}%"></div>
+                    </div>   
+                {% endif %}
+                </td>
+                <td>{{abtest.get_ratio_models(value['model_v_all']['total'], value['model_v_all']['positive'])}}%</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>

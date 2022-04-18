@@ -52,7 +52,7 @@
                                     Valið
                                 </button>
                             {% else %}
-                                <a name='perm-abtest.id-data["instances"][p[0]].id-data["instances"][p[1]].id-None' id='{{url_for("abtest.create_tuple", ab_id=abtest.id, first_id=data["instances"][p[0]].id, second_id=data["instances"][p[1]].id)}}' class='btn btn-primary btn-sm mr-2 mt-2 abtest-permutation-btn'>
+                                <a name='perm-abtest.id-data["instances"][p[0]].id-data["instances"][p[1]].id-None' id='{{url_for("abtest.create_tuple", abtest_id=abtest.id, first_id=data["instances"][p[0]].id, second_id=data["instances"][p[1]].id)}}' class='btn btn-primary btn-sm mr-2 mt-2 abtest-permutation-btn'>
                                     {{macros.btn_icon('square', 'r')}}
                                     Velja
                                 </a>
@@ -64,7 +64,7 @@
                                     Valið
                                 </button>
                             {% else %}
-                                <a name='perm-abtest.id-data["instances"][p[0]].id-data["instances"][p[1]].id-ref_id=data["instances"][p[2]].id' id='{{url_for("abtest.create_tuple", ab_id=abtest.id, first_id=data["instances"][p[0]].id, second_id=data["instances"][p[1]].id, ref_id=data["instances"][p[2]].id)}}' class='btn btn-primary btn-sm mr-2 mt-2 abtest-permutation-btn'>
+                                <a name='perm-abtest.id-data["instances"][p[0]].id-data["instances"][p[1]].id-ref_id=data["instances"][p[2]].id' id='{{url_for("abtest.create_tuple", abtest_id=abtest.id, first_id=data["instances"][p[0]].id, second_id=data["instances"][p[1]].id, ref_id=data["instances"][p[2]].id)}}' class='btn btn-primary btn-sm mr-2 mt-2 abtest-permutation-btn'>
                                     {{macros.btn_icon('square', 'r')}}
                                     Velja
                                 </a>

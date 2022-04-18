@@ -10,7 +10,7 @@
         </div>
 
         <div class='col-12 mb-4'>
-            <a href='{{url_for("abtest.download_abtest_data", id=abtest.id)}}'
+            <a href='{{url_for("abtest.download_abtest_data", abtest_id=abtest.id)}}'
                class='btn btn-primary btn-sm float-right mr-2 mt-2'
                target="_blank" download="abtest_data_{{abtest.id}}.tsv"
                >
@@ -36,11 +36,11 @@
                 <div class='col-6'><p>Búð til:</p></div>
                 <div class='col-6 text-right'><p>{{abtest.created_at | datetime(format='low')}}</p></div>
 
-                <div class='col-6'><p>Meðaleinkunn:</p></div>
-                <div class='col-6 text-right'><p>{{rating_json.average}}</p></div>
+                <div class='col-6'><p>Placeholder:</p></div>
+                <div class='col-6 text-right'><p>??</p></div>
 
-                <div class='col-6'><p>Staðalfrávik:</p></div>
-                <div class='col-6 text-right'><p>{{rating_json.std}}</p></div>
+                <div class='col-6'><p>Placeholder:</p></div>
+                <div class='col-6 text-right'><p>??</p></div>
             </div>
         </div>
     </div>
@@ -87,8 +87,23 @@
         </div>
     {% endif %}
 
+    {% if model_voice_data |length > 0 %}
+        <div class="wrapper" style="margin-top: 10px;">
+            <div style="background-color: #303030; padding-left: 8px;" data-toggle="collapse" data-target="#collapse-models" aria-expanded="false" aria-controls="collapse-ratings" style="cursor: pointer;">
+                <p class="py-2 text-success"><i class="fas fa-plus mr-2" aria-hidden="true"></i> Módel</p>
+            </div>
+            <div class="collapse" id="collapse-models">
+                {% if model_voice_data|length > 0 %}
+                    {% with model_voice_data=model_voice_data %}
+                        {% include 'abtest_results_models_table.jinja'%}
+                    {% endwith %}
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+
     <div class='col-12' style="margin-top: 50px;">
-        <h3 class='font-weight-bold'>Meðaleinkunn setninga</h3>
+        <h3 class='font-weight-bold'>Samanburðir setninga</h3>
         <p>Hver stöpull sýnir meðaleinkunn ákveðinnar seningar frá öllum notendum</p>
         <div class='card'>
             <div class='card-body'>
@@ -98,6 +113,52 @@
         </div>
     </div>
 
+
+
+    <div class="form-group" style="margin-top: 50px; margin-bottom: 50px;">
+        <label id="labelmodel1Select">Veldu Módel</label>
+        <select class="form-control" id="model1Select">
+            <option>Módel</option>
+            {% for model, value in model_voice_data.items() %}
+                <option>{{model}}</option>
+            {% endfor %}
+        </select>
+
+        <div id="containerVoice1Select" class='d-none'>
+            <label id="labelvoice1Select">Veldu rödd</label>
+            <select class="form-control" id="voice1Select">
+
+            </select>
+        </div>
+
+        <div id="containerModel2Select" class='d-none'>
+            <p class="h4 my=5" style="margin-top: 20px;">
+                Borið saman við
+            </p>
+            <label id="labelmodel2Select">Veldu módel</label>
+            <select class="form-control" id="model2Select">
+        
+            </select>
+        </div>
+
+        <div id="containerVoice2Select" class='d-none'>
+            <label id="labelvoice2select">Veldu rödd</label>
+            <select class="form-control" id="voice2select">
+
+            </select>
+        </div>
+    </div>
+
+    <div id="containerModelVoicePlot" class='col-12 d-none' style="margin-top: 50px;">
+        <h3 class='font-weight-bold'>Samanburðir modela </h3>
+        <p>Hver stöpull sýnir...</p>
+        <div class='card'>
+            <div class='card-body'>
+                <div id='bar-chart-models'>
+                </div>
+            </div>
+        </div>
+    </div>
     <!--
     <div class='col-12' style="margin-top: 50px;">
         <h3 class='font-weight-bold'>Notendahegðun</h3>
@@ -210,6 +271,18 @@
     {{super()}}
 
     <script>
+
+        var model_voice_data = {{model_voice_data}}
+        var current_model1 = 'Model1'
+        var current_voice1 = 'Voice1'
+        var current_model2 = 'Model2'
+        var current_voice2 = 'Moice2'
+        var containerVoice1 = $('#containerVoice1Select')
+        var containerModel2 = $('#containerModel2Select')
+        var containerVoice2 = $('#containerVoice2Select')
+        var containerModelVoicePlot = $('#containerModelVoicePlot')
+
+
         $(document).ready(function () {
             $('.collapse')
                 .on('shown.bs.collapse', function() {
@@ -239,10 +312,9 @@
         }
         var data = [];
 
-        var users = {{users_graph_json}}
-        var placement = {{placement_info}}
+        //var users = {{users_graph_json}}
+        //var placement = {{placement_info}}
         var abtest_stats = {{abtest_stats}}
-
         var container_bar = document.getElementById('bar-chart-sentence');
 
         var trace1 = {
@@ -277,7 +349,154 @@
 
         Plotly.newPlot(container_bar, data, layout_bar_sentences, config);
 
+        function plot_model_voice(values1, values2, names, split_names1, split_names2){
+            var config = {
+            responsive: true
+            }
+            var data = [];
 
+            var abtest_stats = {{abtest_stats}}
+
+            var container_bar = document.getElementById('bar-chart-models');
+
+            var trace1 = {
+                x: values1,
+                y: names,
+                name: '',
+                orientation: 'h',
+                type: 'bar',
+                text: split_names1,
+                marker: {
+                    color: 'rgba(255,153,51,0.6)',
+                    width: 1
+                }
+            };
+
+            var trace2 = {
+                x: values2,
+                y: names,
+                name: '',
+                orientation: 'h',
+                text: split_names2,
+                type: 'bar',
+                marker: {
+                    color: 'rgba(55,128,191,0.6)',
+                    width: 1
+                }
+            };
+
+            data = [trace1, trace2]
+            var layout_bar_sentences = {
+                title: 'Model vs...',
+                barmode: 'stack',
+                showlegend: false,
+                xaxis:{
+                    title:{
+                        text: 'Prósenta valin',
+                    },
+                    range: [0,100]
+                }
+            };
+
+            Plotly.newPlot(container_bar, data, layout_bar_sentences, config);
+        }
+
+        function populateSelect(list_element, data){
+            //var list = document.getElementById("projectSelectorDropdown"); 
+            var keys = get_keys_of_dict(data);
+            list_element.find('option').remove()
+
+            list_element.append(`<option value="Veldu">Veldu</option>`);
+            for(var key in keys){
+                var optionValue = keys[key];
+                var optionText = keys[key];
+                list_element.append(`<option value="${optionValue}"> ${optionText} </option>`);
+            }
+        }
+        
+        
+        function get_keys_of_dict(dict){
+            var keys = [];
+
+            for (var key in dict) {
+                if (dict.hasOwnProperty(key)) {
+                    keys.push(key);
+                }
+            }
+            return keys
+        }
+
+        function get_model_voice_plot_data(data, name1, name2){
+            first_positive = (Math.round((data['positive'] / data['total'])*100) / 100) * 100
+            second_positive = 100 - first_positive
+            return [[first_positive], [second_positive], [name1 + ' vs ' + name2], [name1], [name2]]
+        }
+
+        function get_every_model_vs_model(data){
+            var return_data = [[], [], [], [], []]
+            for (var key in data) {
+                if (data.hasOwnProperty(key)) {
+                    model_data = get_model_voice_plot_data(data[key], current_model1, key)
+                    return_data[0].push(model_data[0][0])
+                    return_data[1].push(model_data[1][0])
+                    return_data[2].push(model_data[2][0])
+                    return_data[3].push(model_data[3][0])
+                    return_data[4].push(model_data[4][0])
+                }
+            }
+            return return_data
+        }
+
+        $('#model1Select').change(function(){
+            nextSelect = $('#voice1Select')
+            containerModelVoicePlot.removeClass('d-none')
+            containerVoice1.removeClass('d-none')
+            containerModel2.addClass('d-none')
+            containerVoice2.addClass('d-none')
+            current_model1 = $(this).val()
+            populateSelect(nextSelect, model_voice_data[current_model1])
+            
+            plot_data = get_every_model_vs_model(model_voice_data[current_model1]['model_v_model'])
+            plot_model_voice(plot_data[0], plot_data[1], plot_data[2], plot_data[3], plot_data[4])
+        })
+
+
+        $('#voice1Select').change(function(){
+            current_voice1 = $(this).val()
+            if(current_voice1 == 'model_v_all'){
+                plot_data = get_model_voice_plot_data(model_voice_data[current_model1][current_voice1], current_model1, 'All models')
+                plot_model_voice(plot_data[0], plot_data[1], plot_data[2], plot_data[3])
+                containerModel2.addClass('d-none')
+                containerVoice2.addClass('d-none')
+            }
+            else{
+                nextSelect = $('#model2Select')
+                containerModel2.removeClass('d-none')
+                containerVoice2.addClass('d-none')
+                
+                populateSelect(nextSelect, model_voice_data[current_model1][current_voice1])
+            }
+        })
+
+        $('#model2Select').change(function(){
+            current_model2 = $(this).val()
+            if(current_voice1 == 'model_v_model'){
+                plot_data = get_model_voice_plot_data(model_voice_data[current_model1][current_voice1][current_model2], current_model1, current_model2)
+                plot_model_voice(plot_data[0], plot_data[1], plot_data[2], plot_data[3])
+            }
+            else{
+            nextSelect = $('#voice2select')
+            containerVoice2.removeClass('d-none')
+            populateSelect(nextSelect, model_voice_data[current_model1][current_voice1][current_model2])
+            }
+        })
+
+        $('#voice2select').change(function(){
+            current_voice2 = $(this).val()
+            plot_data = get_model_voice_plot_data(model_voice_data[current_model1][current_voice1][current_model2][current_voice2], current_model1 + current_voice1, current_model2 + current_voice2)
+            plot_model_voice(plot_data[0], plot_data[1], plot_data[2], plot_data[3])
+        })
+        
         /*
         function assignOptions(textArray, selector) {
             for (var i = 0; i < textArray.length;  i++) {

@@ -10,7 +10,7 @@
         </div>
 
         <div class='col-12 mb-4'>
-            <a href='{{url_for("mos.download_mos_data", id=mos.id)}}'
+            <a href='{{url_for("mos.download_mos_data", mos_id=mos.id)}}'
                class='btn btn-primary btn-sm float-right mr-2 mt-2'
                target="_blank" download="mos_data_{{mos.id}}.tsv"
                >
