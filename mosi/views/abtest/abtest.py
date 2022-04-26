@@ -346,18 +346,15 @@ def abtest_results(abtest_id):
                 request.args.get('sort_by', default='id'),
                 order=request.args.get('order', default='desc'))).all()
     abtest_list = [ab for ab in abtest_list if ab.num_ratings > 0]
-    print(1)
     ratings = abtest.getAllRatings()
     max_placement = 1
     for j in ratings:
         if j.placement > max_placement:
             max_placement = j.placement
-    print(2)
     if len(ratings) == 0:
         return redirect(url_for('abtest.abtest_detail', abtest_id=abtest.id))
     user_ids = abtest.getAllUsers()
     users = User.query.filter(User.id.in_(user_ids)).all()
-    print(3)
     all_rating_stats = []
     placement = [0]*max_placement
     p_counter = [0]*max_placement
@@ -369,7 +366,6 @@ def abtest_results(abtest_id):
     for i in range(len(placement)):
         if p_counter[i] != 0 and placement[i] != 0:
             placement[i] = placement[i]/p_counter[i]
-    print(4)
     placement_info = {
         'placement': placement,
         'p_nums': list(range(1, len(abtest_list)))}
@@ -393,7 +389,6 @@ def abtest_results(abtest_id):
         abtest_stats['not_picked'].append(ab_not_picked)
         abtest_stats['ratio'].append(m.ab_ratio)
         abtest_stats['ratio_inverse'].append(m.ab_ratio_inverse)
-    print(5)
     users_list = []
     users_graph_json = []
     #this takes a long time
@@ -425,7 +420,6 @@ def abtest_results(abtest_id):
         '''
         users_list.append(temp)
         #users_graph_json.append(temp2)
-    print(6)
     users_list = sorted(users_list, key=itemgetter('total'))
 
     all_usernames_list = []
@@ -437,7 +431,6 @@ def abtest_results(abtest_id):
         user_name_dict[u['user_ratings']['username']]['selectiveRatings'] = [u['user_ratings']['ratings'][i] for i in indices]
         user_name_dict[u['user_ratings']['username']]['selectiveABtestIds'] = [abtest_stats['names'][i] for i in indices]
         user_name_dict[u['user_ratings']['username']]['selectiveABtestMeans'] = [abtest_stats['means'][i] for i in indices]
-    print(7)
     # Average per voice index
     ratings_by_voice = abtest.getResultsByVoice()
     per_voice_data = {
@@ -449,9 +442,7 @@ def abtest_results(abtest_id):
         per_voice_data["x"].append(voice_idx)
         per_voice_data["y"].append(round(np.mean([r.rating for r in ratings]), 2))
         per_voice_data["std"].append(round(np.std([r.rating for r in ratings]), 2))
-    print(8)
     model_voice_data = abtest.get_model_voice_result_dict
-    print(9)
 
     return render_template(
         'abtest_results.jinja',

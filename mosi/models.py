@@ -627,7 +627,7 @@ class MosInstance(BaseModel, db.Model):
 
     @property
     def ajax_edit_action(self):
-        return url_for('mos.mos_instance_edit', id=self.id)
+        return url_for('mos.mos_instance_edit', mos_instance_id=self.id)
 
     @property
     def average_rating(self):

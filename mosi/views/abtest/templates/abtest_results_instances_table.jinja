@@ -10,6 +10,12 @@
             Texti
         </th>
         <th>
+            Módel
+        </th>
+        <th>
+            Rödd
+        </th>
+        <th>
             Fjöldi einkunna
         </th>
         <th>
@@ -38,6 +44,8 @@
                 {% endif %}
 
                 <td>{{abtest.text}}</td>
+                <td>{{abtest.model_idx}}</td>
+                <td>{{abtest.voice_idx}}</td>
                 <td>
                     {{abtest.number_of_ratings}}
                 </td>
