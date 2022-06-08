@@ -438,10 +438,9 @@ def abtest_results(abtest_id):
         "y": [],
         "std": [],
     }
-    for voice_idx, ratings in ratings_by_voice.items():
-        per_voice_data["x"].append(voice_idx)
-        per_voice_data["y"].append(round(np.mean([r.rating for r in ratings]), 2))
-        per_voice_data["std"].append(round(np.std([r.rating for r in ratings]), 2))
+    
+    per_voice_data = abtest.get_voice_results_dict
+    print(per_voice_data)
     model_voice_data = abtest.get_model_voice_result_dict
 
     return render_template(

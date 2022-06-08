@@ -847,6 +847,26 @@ class ABtest(BaseModel, db.Model):
         return configurations
 
     @property
+    def get_voice_results_dict(self):
+        voice_dict = {}
+        ratings = self.getAllRatings()
+        for r in ratings:
+            if r.rating == 1 or r.rating == 2:
+                if r.ab_tuple.first.voice_idx not in voice_dict:
+                    voice_dict[r.ab_tuple.first.voice_idx] = {'total': 1, 'positive': 0}
+                else:
+                    voice_dict[r.ab_tuple.first.voice_idx]['total'] += 1
+                if r.ab_tuple.second.voice_idx not in voice_dict:
+                    voice_dict[r.ab_tuple.second.voice_idx] = {'total': 1, 'positive': 0}
+                else:
+                    voice_dict[r.ab_tuple.second.voice_idx]['total'] += 1
+                if r.rating == 1:
+                    voice_dict[r.ab_tuple.first.voice_idx]['positive'] += 1
+                if r.rating == 2:
+                    voice_dict[r.ab_tuple.second.voice_idx]['positive'] += 1
+        return voice_dict
+
+    @property
     def get_model_voice_result_dict(self):
         '''
         Make dict that contains every comparison of model-voice
@@ -1260,7 +1280,6 @@ class ABRating(BaseModel, db.Model):
 
     @property
     def test_id(self):
-        print(self.ab_tuple.abtest_id)
         return self.ab_tuple.abtest_id
 
 
