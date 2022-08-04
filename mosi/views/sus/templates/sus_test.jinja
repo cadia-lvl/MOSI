@@ -16,4 +16,79 @@
 
 {% block scripts %}
     {{super()}}
+
+    <script>
+    var numSusObjs = {{sus_list_stats}}['len'];
+        (function() {
+            $('form textarea').keyup(function() {
+                
+                var empty = false;
+                $('form textarea').each(function() {
+                    if ($(this).val() == '') {
+                        empty = true;
+                    }
+                });
+
+                if (empty) {
+                    $('#submit').attr('disabled', 'disabled'); // updated according to http://stackoverflow.com/questions/7637790/how-to-remove-disabled-attribute-with-jquery-ie
+                } else {
+                    $('#submit').removeAttr('disabled'); // updated according to http://stackoverflow.com/questions/7637790/how-to-remove-disabled-attribute-with-jquery-ie
+                }
+            });
+        })()
+
+        var input = $("<input>")
+            .attr("type", "hidden")
+            .attr("name", "user_id").val("{{user.id}}");
+        $('#sus-form').append(input);
+        var input = $("<input>")
+            .attr("type", "hidden")
+            .attr("name", "sus_id").val("{{sus.id}}");
+        $('#sus-form').append(input);
+
+        function setProgressUI(){
+            var num_filled = 0
+            $('form textarea').each(function() {
+                if ($(this).val() != '') {
+                    num_filled += 1
+                }
+            });
+            var ratio = (num_filled / numSusObjs) * 100;
+            tokenProgress.style.width = `${ratio.toString()}%`;
+            currentIndexSpan.innerHTML = num_filled;
+        }
+
+
+        async function updateUI(){
+            setProgressUI();
+        }
+
+        $('form textarea').bind('input propertychange', function() {
+            if(!$(this).val()){
+                $(this)
+                    .parent()
+                    .parent()
+                    .find(".fa-check")
+                    .removeClass("fa-check")
+                    .removeClass("text-success")
+                    .addClass("text-warning")
+                    .addClass("fa-square");
+                    
+            }
+            else{
+                $(this)
+                    .parent()
+                    .parent()
+                    .find(".fa-square")
+                    .removeClass("fa-square")
+                    .removeClass("text-warning")
+                    .addClass("text-success")
+                    .addClass("fa-check");
+            }
+            updateUI()
+        });
+
+        updateUI()
+
+    </script>
 {% endblock %}

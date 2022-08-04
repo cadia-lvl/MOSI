@@ -1,0 +1,77 @@
+<div class='table-responsive'>
+    <table class='table'>
+        <thead>
+            <th>
+
+            </th>
+            <th>
+                Auðkenni
+            </th>
+            <th>
+                Réttur texti
+            </th>
+            <th>
+                Notandi
+            </th>
+            <th>
+                Svar
+            </th>
+            <th>
+                Staða
+            </th>
+        </thead>
+        <tbody>
+            {% for ans in answers %}
+                <tr>
+                    <td>
+                        <audio id="audio-{{ans.recording.id}}" src={{ans.recording.get_download_url()}} type="audio/wav"></audio>
+                        <button type='button' class='btn btn-link btn-sm' onClick="play({{ans.recording.id}})">
+                            <i id='playButtonIcon-{{ans.recording.id}}' class='fa fa-play'></i>
+                        </button>
+                    </td>
+                    <td>
+                        {% if ans.token %}
+                            <a href={{ans.token.get_url()}} class=''><code>{{ans.token.get_printable_id()}}</code></a>
+                        {% else %}
+                            -
+                        {% endif %} 
+                    </td>
+
+                    <td>
+                        {{ans.token_text}}
+                    </td>
+                    <td>
+                        {{ans.get_user.name}}
+                    </td>
+                    <td>
+                        {{ans.answer}}
+                    </td>
+                    <td>
+                        <div id='btns-container-{{ans.id}}'>
+                            {% if ans.correct_Answer %}
+                                <span id='correct-btn-container' class='hover-pointer'>
+                                    <i id='{{url_for("sus.make_answer_incorrect", sus_id=sus.id, ans_id=ans.id)}}' class='fa fa-thumbs-up text-success answer-review-btn'></i>
+                                </span>
+                                <span id='incorrect-btn-container' class='d-none hover-pointer'>
+                                    <i id='{{url_for("sus.make_answer_correct", sus_id=sus.id, ans_id=ans.id)}}' class='fa fa-thumbs-down text-danger answer-review-btn'></i>
+                                </span>
+                            {% else %}
+                                <span id='correct-btn-container' class='d-none hover-pointer'>
+                                    <i id='{{url_for("sus.make_answer_incorrect", sus_id=sus.id, ans_id=ans.id)}}' class='fa fa-thumbs-up text-success answer-review-btn'></i>
+                                </span> 
+
+                                <span id='incorrect-btn-container' class='hover-pointer'>
+                                    <i id='{{url_for("sus.make_answer_correct", sus_id=sus.id, ans_id=ans.id)}}' class='fa fa-thumbs-down text-danger answer-review-btn'></i>
+                                </span>
+                            {% endif %} 
+                        </div>
+                    </td>
+
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script src='{{url_for("main.static", filename="js/listControls.js")}}'></script>
+

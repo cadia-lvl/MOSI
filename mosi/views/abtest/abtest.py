@@ -440,7 +440,6 @@ def abtest_results(abtest_id):
     }
     
     per_voice_data = abtest.get_voice_results_dict
-    print(per_voice_data)
     model_voice_data = abtest.get_model_voice_result_dict
 
     return render_template(

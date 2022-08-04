@@ -27,7 +27,7 @@
             Sækja upptökur
         </a>
         {% if sus_list | length > 0%}
-            <a class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2' id='start-button' href='{{url_for("sus.sus_test", sus_uuid=sus.uuid)}}'>
+            <a class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2' id='start-button' href='{{url_for("sus.sus_test", sus_uuid=sus.uuid, user_uuid=current_user.uuid)}}'>
                 {{macros.btn_icon('play', 'r')}}
                 Hefja SUS próf
             </a>
@@ -37,7 +37,7 @@
                 Hefja SUS próf
             </a>
         {% endif %}
-        {% if false%}
+        {% if sus.number_selected > 0%}
             <a class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2' id='get-link-button' href='{{url_for("sus.take_sus_test", sus_uuid=sus.uuid)}}'>
                 {{macros.btn_icon('link', 'r')}}
                 Hlekkur á próf
@@ -46,6 +46,28 @@
             <a disabled class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2 disabled' id='get-link-button' href='{{url_for("sus.take_sus_test", sus_uuid=sus.uuid)}}'>
                 {{macros.btn_icon('link', 'r')}}
                 Hlekkur á próf
+            </a>
+        {% endif %}
+        {% if sus.get_num_answers > 0 %}
+            <a class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2' id='get-link-button' href='{{url_for("sus.sus_review_answers", sus_id=sus.id)}}'>
+                {{macros.btn_icon('search', 'r')}}
+                Yfirfara svör
+            </a>
+        {% else %}
+            <a disabled class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2 disabled' id='get-link-button'>
+                {{macros.btn_icon('search', 'r')}}
+                Yfirfara svör
+            </a>
+        {% endif %}
+        {% if sus.get_num_answers > 0 %}
+            <a class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2' id='get-link-button' href='{{url_for("sus.sus_results", sus_id=sus.id)}}'>
+                {{macros.btn_icon('chart-bar', 'r')}}
+                Niðurstöður
+            </a>
+        {% else %}
+            <a disabled class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2 disabled' id='get-link-button'>
+                {{macros.btn_icon('chart-bar', 'r')}}
+                Niðurstöður
             </a>
         {% endif %}
         <a class='btn btn-secondary btn-sm text-success float-right mt-2 mr-2' href='{{url_for("sus.sus_edit_detail", sus_id=sus.id)}}'>
@@ -63,7 +85,7 @@
                 <p>...</p>
             </div>
 
-            {% with sus=sus, sus_list=sus_list %}
+            {% with sus=sus, sus_list=sus_list, selectAllForm=select_all_forms[0], deselectAllForm=select_all_forms[1] %}
                 {% include 'sus_table.jinja'%}
             {% endwith %}
         </div>

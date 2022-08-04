@@ -84,7 +84,7 @@ def organiser_of_sus_instance_or_admin(func):
             return redirect(url_for('login'))
 
         instance = SusObject.query.get(sus_instance_id)
-        sus = Sus.query.get(instance.mos_id)
+        sus = Sus.query.get(instance.sus_id)
         is_admin = sus.is_user_admin(current_user.id) or current_user.is_admin()
         if not is_admin:
             flash("Ekki heimilað.", category="danger")

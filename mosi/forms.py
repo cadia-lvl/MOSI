@@ -14,7 +14,7 @@ from wtforms.validators import InputRequired
 from wtforms_alchemy import ModelForm
 from wtforms_components import IntegerField
 
-from mosi.models import (Role, User, Mos, MosInstance, ABtest, ABInstance, ABTuple, db, Sus)
+from mosi.models import (Role, User, Mos, MosInstance, ABtest, ABInstance, ABTuple, db, Sus, SusObject)
 
 
 class MultiCheckboxField(SelectMultipleField):
@@ -350,3 +350,16 @@ class SusUploadForm(FlaskForm):
         validators=[
             FileAllowed(['zip'], 'Skrá verður að vera zip mappa'),
             FileRequired('Hladdu upp zip skrá')])
+
+class SusSelectAllForm(Form):
+    select = HiddenField()
+
+class SusItemSelectionForm(ModelForm):
+    class Meta:
+        model = SusObject
+
+class SusTestForm(Form):
+    name = StringField("Nafn", [validators.required()])
+    age = IntegerField("Aldur", [validators.required(),
+                       validators.NumberRange(min=10, max=120)])
+    audio_setup = StringField("Hvers konar heyrnatól/hátalara ertu með?", [validators.required()])

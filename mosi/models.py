@@ -425,7 +425,7 @@ class Mos(BaseModel, db.Model):
         ratings = []
         for m in self.mos_objects:
             for r in m.ratings:
-                if user_id == r.user_id:
+                if user_id == r.user_id: 
                     ratings.append(r)
         return ratings
 
@@ -1313,12 +1313,47 @@ class Sus(BaseModel, db.Model):
         return False
 
     def getAllUsers(self):
-        ratings = self.getAllRatings()
+        ansers = self.get_all_answers
         user_ids = []
-        for i in ratings:
+        for i in ansers:
             user_ids.append(i.user_id)
         user_ids = list(set(user_ids))
         return user_ids
+
+    def getAllUserAnswers(self, user_id):
+        answers = []
+        for m in self.sus_objects:
+            for r in m.answers:
+                if user_id == r.user_id:
+                    answers.append(r)
+        return answers
+
+    def getAllUserCorrectAnswers(self, user_id):
+        answers = []
+        for m in self.sus_objects:
+            for r in m.answers:
+                if user_id == r.user_id and r.correct_Answer == 1:
+                    answers.append(r)
+        return answers
+
+    def getAllUserIncorrectAnswers(self, user_id):
+        answers = []
+        for m in self.sus_objects:
+            for r in m.answers:
+                if user_id == r.user_id and r.correct_Answer == 0:
+                    answers.append(r)
+        return answers
+
+    def getNumAllUserAnswers(self, user_id):
+        return len(self.getAllUserAnswers(user_id))
+
+    def getNumAllUserCorrectAnswers(self, user_id):
+        return len(self.getAllUserCorrectAnswers(user_id))
+
+
+    def getNumAllUserIncorrectAnswers(self, user_id):
+        return len(self.getAllUserIncorrectAnswers(user_id))
+
 
     def getAllVoiceIndices(self):
         voices = set()
@@ -1332,6 +1367,35 @@ class Sus(BaseModel, db.Model):
             utterances.add(sample.utterance_idx)
         return utterances
 
+    def getResultsByVoice(self):
+        voice_answers = defaultdict(list)
+        for obj in self.sus_objects:
+            for ans in obj.answers:
+                voice_answers["No ID" if obj.voice_idx is None else obj.voice_idx].append(ans)
+        return voice_answers
+    
+    def get_ratio_models(self, var1, var2):
+        return round((100*(var2/var1)), 2)
+
+    @property
+    def get_all_answers(self):
+        ans = []
+        for o in self.sus_objects:
+            for a in o.answers:
+                ans.append(a)
+        return ans
+
+    @property
+    def get_num_answers(self):
+        return len(self.get_all_answers)
+
+
+    @property
+    def get_all_object_ids(self):
+        ids = []
+        for o in self.sus_objects:
+            ids.append(o.id)
+        return ids
 
     @property
     def custom_tokens(self):
@@ -1372,6 +1436,9 @@ class SusObject(BaseModel, db.Model):
         "CustomRecording", lazy="joined",
         backref=db.backref("susObject", uselist=False), uselist=False,
         cascade='all, delete, delete-orphan')
+    answers = db.relationship(
+        "SusAnswer", lazy="joined", backref='susObject',
+        cascade='all, delete, delete-orphan')
     is_synth = db.Column(db.Boolean, default=False)
     voice_idx = db.Column(db.Integer, default=0)
     utterance_idx = db.Column(db.Integer, default=0)
@@ -1411,6 +1478,26 @@ class SusObject(BaseModel, db.Model):
         return self.custom_recording.path
 
     @property
+    def number_of_answers(self):
+        return len(self.answers)
+
+    @property
+    def number_of_correct_answers(self):
+        c = 0
+        for a in self.answers:
+            if a.correct_Answer == 1:
+                c += 1
+        return c
+    
+    @property
+    def number_of_incorrect_answers(self):
+        c = 0
+        for a in self.answers:
+            if a.correct_Answer == 0:
+                c += 1
+        return c
+
+    @property
     def text(self):
         return self.token.text
 
@@ -1428,4 +1515,49 @@ class SusObject(BaseModel, db.Model):
 
     @property
     def ajax_edit_action(self):
-        return url_for('sus.sus_instance_edit', id=self.id)
+        return url_for('sus.sus_instance_edit', sus_instance_id=self.id)
+
+
+class SusAnswer(BaseModel, db.Model):
+    __tablename__ = 'SusAnswer'
+    __table_args__ = (
+        db.UniqueConstraint('sus_object_id', 'user_id'),
+      )
+    id = db.Column(
+        db.Integer, primary_key=True, nullable=False, autoincrement=True)
+    answer = db.Column(db.String)
+    sus_object_id = db.Column(db.Integer, db.ForeignKey("SusObject.id"))
+    correct_Answer = db.Column(db.Integer, default=0, info={
+        'label': 'Rétt svar',
+        'min': 0,
+        'max': 1,
+    })
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user = relationship("User", backref="sus_parents")
+
+    @property
+    def get_user(self):
+        return User.query.get(self.user_id)
+
+    @property
+    def get_object(self):
+        return SusObject.query.get(self.sus_object_id)
+    
+    @property
+    def sus(self):
+        return self.get_object.sus
+
+    @property
+    def recording(self):
+        obj = self.get_object
+        return obj.custom_recording
+
+    @property
+    def token(self):
+        recording = self.recording
+        return recording.token
+
+    @property
+    def token_text(self):
+        token = self.token
+        return token.text

@@ -14,7 +14,7 @@ from flask import flash
 from sqlalchemy import func
 from flask_security import current_user
 from mosi.models import (ABTuple, User, db, MosInstance, ABInstance, ABtest, ABRating, CustomRecording,
-                         CustomToken, MosRating, SusObject)
+                         CustomToken, MosRating, Sus, SusObject, SusAnswer)
 
 
 def save_custom_wav_for_abtest(zip, zip_name, tsv_name, abtest, id):
@@ -372,6 +372,49 @@ def save_MOS_ratings(form, files):
                 mos_instance.ratings.append(rating)
     db.session.commit()
     return mos_id
+
+
+def is_valid_SUS_answer(ans):
+    if len(ans) > 0:
+        return True
+    return False
+
+def delete_SUS_answer_if_exists(SUS_object_id, user_id):
+    ans = SusAnswer.query\
+        .filter(SusAnswer.sus_object_id == SUS_object_id) \
+        .filter(SusAnswer.user_id == user_id).all()
+    exists = False
+    for r in ans:
+        exists = True
+        db.session.delete(r)
+    db.session.commit()
+    return exists
+
+def compare_sus_answer(true_string, ans):
+    if true_string.lower() == ans.lower():
+        return 1
+    return 0
+
+def save_SUS_ratings(form, files):
+    user_id = int(form['user_id'])
+    sus_id = int(form['sus_id'])
+    sus = Sus.query.get(sus_id)
+    obj_ids = sus.get_all_object_ids
+    for i in form.keys():
+        if i == 'user_id' or i == 'sus_id':
+            continue
+        if int(i) in obj_ids:
+            if is_valid_SUS_answer(form[i]):
+                delete_SUS_answer_if_exists(i, user_id)
+                sus_object = SusObject.query.get(i)
+                ans = SusAnswer()
+                ans.answer = form[i]
+                ans.user_id = user_id
+                ans.correct_Answer = compare_sus_answer(sus_object.text, form[i])
+                sus_object.answers.append(ans)
+    db.session.commit()
+    return sus_id
+
 
 def delete_abtest_rating_if_exists(ab_tuple_id, user_id):
     rating = ABRating.query\

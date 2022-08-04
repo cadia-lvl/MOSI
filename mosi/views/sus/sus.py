@@ -14,12 +14,15 @@ from flask_security import login_required, roles_accepted, current_user
 from sqlalchemy.exc import IntegrityError
 from mosi.decorators import (organiser_of_sus_or_admin, organiser_of_sus_instance_or_admin)
 
-from mosi.models import (Sus, SusObject, User,
+from mosi.models import (Sus, SusObject, User, SusAnswer,
                          CustomToken, CustomRecording, db)
 from mosi.db import (resolve_order, save_custom_sus_wav,
-                     delete_sus_object_db)
-#from mosi.forms import (SusSelectAllForm, SusUploadForm, SusItemSelectionForm,
-#                        SusTestForm, SusForm, SusDetailForm)
+                     delete_sus_object_db, save_SUS_ratings)
+from mosi.forms import (SusSelectAllForm, SusItemSelectionForm,
+                        SusTestForm,
+                        #SusUploadForm,
+                        #SusForm, SusDetailForm
+                        )
 
 from mosi.forms import SusUploadForm, SusDetailForm
 
@@ -61,12 +64,10 @@ def sus_list():
 def sus_detail(sus_id):
     sus = Sus.query.get(sus_id)
     form = SusUploadForm()
-    #select_all_forms = [
-    #    SusSelectAllForm(is_synth=True, select=True),
-    #    SusSelectAllForm(is_synth=True, select=False),
-    #    SusSelectAllForm(is_synth=False, select=True),
-    #    SusSelectAllForm(is_synth=False, select=False),
-    #]
+    select_all_forms = [
+        SusSelectAllForm(select=True),
+        SusSelectAllForm(select=False),
+    ]
 
     if request.method == 'POST':
         if form.validate():
@@ -100,14 +101,55 @@ def sus_detail(sus_id):
                 SusObject,
                 request.args.get('sort_by', default='id'),
                 order=request.args.get('order', default='desc'))).all()
-
+    
+    for s in sus_list:
+        s.selection_form = SusItemSelectionForm(obj=s)
     return render_template(
         'sus.jinja',
         sus=sus,
         sus_list=sus_list,
-        #select_all_forms=select_all_forms,
+        select_all_forms=select_all_forms,
         sus_form=form,
         section='sus')
+
+
+@sus.route('/sus/instances/<int:sus_instance_id>/edit', methods=['POST'])
+@login_required
+@organiser_of_sus_instance_or_admin
+def sus_instance_edit(sus_instance_id):
+    instance = SusObject.query.get(sus_instance_id)
+    form = SusItemSelectionForm(request.form, obj=instance)
+    try:
+        form.populate_obj(instance)
+        db.session.commit()
+        response = {}
+        return Response(json.dumps(response), status=200)
+    except Exception as error:
+        app.logger.error('Error creating a verification : {}\n{}'.format(
+            error, traceback.format_exc()))
+        errorMessage = "<br>".join(list("{}: {}".format(
+            key, ", ".join(value)) for key, value in form.errors.items()))
+        return Response(errorMessage, status=500)
+
+
+
+@sus.route('/sus/<int:sus_id>/select_all', methods=['POST'])
+@login_required
+@organiser_of_sus_or_admin
+def sus_select_all(sus_id):
+    try:
+        form = SusSelectAllForm(request.form)
+        select = True if form.data['select'] == 'True' else False
+        sus_list = SusObject.query\
+            .filter(SusObject.sus_id == sus_id).all()
+        for m in sus_list:
+            m.selected = select
+        db.session.commit()
+        return redirect(url_for('sus.sus_detail', sus_id=sus_id))
+    except Exception as error:
+        print(error)
+        flash("Ekki gekk að merkja alla", category='warning')
+    return redirect(url_for('sus.sus_detail', sus_id=sus_id))
 
 
 @sus.route('/sus/<int:sus_id>/edit/detail', methods=['GET', 'POST'])
@@ -160,7 +202,7 @@ def take_sus_test(sus_uuid):
                 return redirect(
                     url_for("sus.take_sus_test", sus_uuid=sus_uuid))
             return redirect(
-                url_for("sus.sus_test", id=sus.id, uuid=new_user.uuid))
+                url_for("sus.sus_test", sus_uuid=sus.uuid, user_uuid=new_user.uuid))
 
     return render_template(
         'take_sus_test.jinja',
@@ -170,13 +212,129 @@ def take_sus_test(sus_uuid):
         action=url_for('sus.take_sus_test', sus_uuid=sus_uuid))
 
 
-@sus.route('/sus/sustest/<uuid:sus_uuid>/', methods=['GET'])
-def sus_test(sus_uuid):
-   
+@sus.route('/sus/<int:sus_id>/review_answers', methods=['GET', 'POST'])
+@login_required
+@organiser_of_sus_or_admin
+def sus_review_answers(sus_id):
+    sus = Sus.query.get(sus_id)
+    answers = sus.get_all_answers
+    return render_template(
+        'sus_review_answers.jinja',
+        sus=sus,
+        answers=answers,
+        section='sus')
+
+@sus.route('/sus/<int:sus_id>/correct_answer/<int:ans_id>/')
+@login_required
+@organiser_of_sus_or_admin
+def make_answer_correct(sus_id, ans_id):
+    print('make correct')
+    ans = SusAnswer.query.get(ans_id)
+    sus = ans.sus
+    is_admin = sus.is_user_admin(current_user.id) or current_user.is_admin()
+    if is_admin:
+        ans.correct_Answer = 1
+        db.session.commit()
+        response = {'action': 1, 'id': ans.id}
+        return Response(json.dumps(response), status=200)
+    response = {}
+    return Response(json.dumps(response), status=401)
+
+@sus.route('/sus/<int:sus_id>/incorrect_answer/<int:ans_id>/')
+@login_required
+@organiser_of_sus_or_admin
+def make_answer_incorrect(sus_id, ans_id):
+    print('make incorrect')
+    ans = SusAnswer.query.get(ans_id)
+    sus = ans.sus
+    is_admin = sus.is_user_admin(current_user.id) or current_user.is_admin()
+    if is_admin:
+        ans.correct_Answer = 0
+        db.session.commit()
+        response = {'action': 0, 'id': ans.id}
+        return Response(json.dumps(response), status=200)
+    response = {}
+    return Response(json.dumps(response), status=401)
+
+@sus.route('/sus/<int:sus_id>/sus_results', methods=['GET', 'POST'])
+@login_required
+@organiser_of_sus_or_admin
+def sus_results(sus_id):
+    sus = Sus.query.get(sus_id)
+    sus_list = SusObject.query.filter(SusObject.sus_id == sus_id).order_by(
+            resolve_order(
+                SusObject,
+                request.args.get('sort_by', default='id'),
+                order=request.args.get('order', default='desc'))).all()
+    answers = sus.get_all_answers
+    user_ids = sus.getAllUsers()
+    users = User.query.filter(User.id.in_(user_ids)).all()
+    
+    sus_list = SusObject.query.filter(SusObject.sus_id == sus_id).order_by(
+            resolve_order(
+                SusObject,
+                request.args.get('sort_by', default='id'),
+                order=request.args.get('order', default='desc'))).all()
+    sus_list = [s for s in sus_list if len(s.answers) > 0]
+    answers = sus.get_all_answers
+
+    if len(answers) == 0:
+        return redirect(url_for('sus.sus_detail', sus_id=sus.id))
+    user_ids = sus.getAllUsers()
+    users = User.query.filter(User.id.in_(user_ids)).all()
+
+    all_answers_stats = []
+    for i in answers:
+        all_answers_stats.append(i.answer)
+
+    
+    sus_stats = {
+        'names': [],
+        'correct': [],
+        'total_amount': []}
+    for m in sus_list:
+        sus_stats['names'].append(str(m.id))
+        sus_stats['correct'].append(m.number_of_correct_answers)
+        sus_stats['total_amount'].append(m.number_of_answers)
+
+
+    # Average per voice index
+    answers_by_voice = sus.getResultsByVoice()
+    per_voice_data = {
+        "x": [],
+        "y": [],
+        "total_ans": [],
+    }
+    for voice_idx, answers in answers_by_voice.items():
+        per_voice_data["x"].append(voice_idx)
+        per_voice_data["y"].append(np.sum([r.correct_Answer for r in answers]))
+        per_voice_data["total_ans"].append(len(answers))
+
+    return render_template(
+        'sus_results.jinja',
+        sus=sus,
+        sus_list=sus_list,
+        per_voice_data=per_voice_data,
+        answers=answers,
+        users=users,
+        section='sus'
+    )
+
+@sus.route('/sus/<uuid:sus_uuid>/sustest/<uuid:user_uuid>/', methods=['GET'])
+def sus_test(sus_uuid, user_uuid):
+    user = User.query.filter(User.uuid == str(user_uuid)).first()
+    if user.is_admin():
+        if user.id != current_user.id:
+            flash("Þú hefur ekki aðgang að þessari síðu", category='error')
+            return redirect(url_for("mos", id=id))
     sus = Sus.query.filter(Sus.uuid == str(sus_uuid)).first()
-    sus_instances = SusObject.query.filter(SusObject.sus_id == sus.id)
-    sus_list = [instance for instance in sus_instances if instance.path]
-    #random.shuffle(sus_list)
+    if False:#sus.use_latin_square:
+        sus_configurations = sus.getConfigurations()
+        sus_list = sus_configurations[(sus.num_participants - 1) % len(sus_configurations)]
+    else:
+        sus_instances = SusObject.query.filter(SusObject.sus_id == sus.id, SusObject.selected == True)
+        sus_list = [instance for instance in sus_instances if instance.path]
+        random.shuffle(sus_list)
 
     audio = []
     audio_url = []
@@ -191,11 +349,13 @@ def sus_test(sus_uuid):
         info['texts'].append(i.text)
     audio_json = json.dumps([r.get_dict() for r in audio])
     sus_list_json = json.dumps([r.get_dict() for r in sus_list])
-
+    sus_list_stats = {'len': len(sus_list)}
     return render_template(
         'sus_test.jinja',
         sus=sus,
         sus_list=sus_list,
+        sus_list_stats=sus_list_stats,
+        user=user,
         recordings=audio_json,
         recordings_url=audio_url,
         json_sus=sus_list_json,
@@ -297,7 +457,28 @@ def delete_sus_instance(sus_instance_id):
     else:
         flash("Ekki gekk að eyða línu rétt", category='warning')
         print(errors)
-    return redirect(url_for('sus.sus_detail', id=sus_id))
+    return redirect(url_for('sus.sus_detail', sus_id=sus_id))
+
+
+@sus.route('/sus/post_sus_rating/<int:sus_id>', methods=['POST'])
+def post_sus_rating(sus_id):
+    try:
+        sus_id = save_SUS_ratings(request.form, request.files)
+    except Exception as error:
+        flash(
+            "Villa kom upp. Hafið samband við kerfisstjóra",
+            category="danger")
+        app.logger.error("Error posting recordings: {}\n{}".format(
+            error, traceback.format_exc()))
+        return Response(str(error), status=500)
+    if sus_id is None:
+        flash("Engar einkunnir í SUS prófi.", category='warning')
+    else:
+        flash("SUS próf klárað", category='success')
+    if current_user.is_anonymous:
+        return redirect(url_for('sus.sus_done', sus_id=sus_id))
+    else:
+        return redirect(url_for('sus.sus_detail', sus_id=sus_id))
 
 
 @sus.route('/custom-recording/<int:id>/download/')
@@ -341,7 +522,7 @@ def download_custom_token(id):
                 error, traceback.format_exc()))
 
 
-@sus.route('/sus-done/<int:id>', methods=['GET'])
-def sus_done(id):
-    sus = Sus.query.get(id)
+@sus.route('/sus-done/<int:sus_id>', methods=['GET'])
+def sus_done(sus_id):
+    sus = Sus.query.get(sus_id)
     return render_template("sus_done.jinja", sus=sus)

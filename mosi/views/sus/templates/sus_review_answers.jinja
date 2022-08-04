@@ -1,0 +1,68 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    {% if answers | length > 0%}
+        <div>
+            <div>
+                <h3>Svör til yfirferðar</h3>
+            </div>
+
+            {% with sus=sus, answers=answers %}
+                {% include 'sus_review_answers_table.jinja'%}
+            {% endwith %}
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    {{super()}}
+
+    <script>
+        $(".answer-review-btn").on('click', function(){
+            var info = {
+                        'url': this.id
+                            }
+            updateAnswer(info)
+        });
+
+        function updateCorrectionBtnUI(response){
+            var name = '#btns-container-' + response['id']
+            var container = $(name);
+            if(response['action'] == 1){
+                container
+                .find("#correct-btn-container")
+                .removeClass("d-none")
+
+                container
+                .find("#incorrect-btn-container")
+                .addClass("d-none");
+            }
+            else if(response['action'] == 0){
+                container
+                .find("#incorrect-btn-container")
+                .removeClass("d-none")
+
+                container
+                .find("#correct-btn-container")
+                .addClass("d-none");
+                
+            }
+    
+        }
+        function updateAnswer(info) {
+
+            var xhr = new XMLHttpRequest();
+            xhr.onload = function(e) {
+                if(this.readyState === XMLHttpRequest.DONE) {
+                    if(xhr.status == '200'){
+                        var response = JSON.parse(xhr.responseText);
+                        updateCorrectionBtnUI(response)
+                    } else{
+                        promptError("Villa koma upp:", xhr.responseText, "");
+                    }
+                }
+            }
+            xhr.open("GET", info['url'], true);
+            xhr.send( null );
+        }
+    </script>
+{% endblock %}

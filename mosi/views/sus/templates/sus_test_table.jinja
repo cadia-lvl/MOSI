@@ -1,36 +1,55 @@
 <div class='table-responsive'>
-    <table class='table'>
-        <thead>
-            <th>
+    
+    <div class='row mb-3 mt-md-0 mt-n4 mb-5'>
+        <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12'>
+            <p class='text-center'>
+                <span class='rounded-pill bg-secondary text-success px-2 py-1 mt-3'>
+                    <span id='currentIndexSpan'>0</span>/<span id='totalIndexSpan'>{{sus_list | length}}</span>
+                </span>
+            </p>
+            <div class="progress">
+                <div class="progress-bar bg-success" id='tokenProgress' role="progressbar"></div>
+            </div>
+        </div>
+    </div>
 
-            </th>
-            <th>
-                Auðkenni setningar
-            </th>
-            <th>
-                Texti
-            </th>
-        </thead>
-        <tbody>
-            {% for sus in sus_list %}
-                <tr>
-                    <td>
-                        <audio id="audio-{{sus.custom_recording.id}}" src={{sus.custom_recording.get_download_url()}} type="audio/wav"></audio>
-                        <button type='button' class='btn btn-link btn-sm' onClick="play({{sus.custom_recording.id}})">
-                            <i id='playButtonIcon-{{sus.custom_recording.id}}' class='fa fa-play'></i>
-                        </button>
-                    </td>
-                    {% if sus.token %}
-                        <td><a href={{sus.token.get_url()}} class=''><code>{{sus.token.get_printable_id()}}</code></a></td>
-                    {% else %}
-                        <td>-</td>
-                    {% endif %}
+    <form id='sus-form' action="{{url_for('sus.post_sus_rating', sus_id=sus.id)}}" method="post">
+        <table class='table'>
+            <thead>
+                <th>
 
-                    <td>{{sus.text}}</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                </th>
+                <th>
+                    Texti
+                </th>
+                <th>
+                    Staða
+                </th>
+            </thead>
+            <tbody>
+                {% for sus_obj in sus_list %}
+                    <tr>
+                        <td>
+                            <audio id="audio-{{sus_obj.custom_recording.id}}" src={{sus_obj.custom_recording.get_download_url()}} type="audio/wav"></audio>
+                            <button type='button' class='btn btn-link btn-sm' onClick="play({{sus_obj.custom_recording.id}})">
+                                <i id='playButtonIcon-{{sus_obj.custom_recording.id}}' class='fa fa-play'></i>
+                            </button>
+                        </td>
+
+                        <td><textarea name='{{sus_obj.id}}' class="form-control textarea" id="exampleFormControlTextarea1" rows="1"></textarea></td>
+                        
+                        <td>     
+                            <span class=''>
+                                <i id="icon-{{sus_obj.id}}" class='fa fa-square text-warning'></i>
+                            </span> 
+                        </td>
+
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <input type="submit"  value="Klára"  id="submit" class="btn btn-primary mb-2"  disabled="disabled">
+    </form>
 </div>
 
 <script src='{{url_for("main.static", filename="js/listControls.js")}}'></script>

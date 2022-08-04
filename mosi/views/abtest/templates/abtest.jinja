@@ -140,12 +140,14 @@
                         <code>Audio</code> mappan inniheldur allar talgervingarnar á <code>.wav</code> formi og <code>index.csv</code> tengir auðkenni hverrar setningar við nafn
                         talgervingarinnar í audio möppunni. <br> <br>
                         Í <code>index.csv</code> eru eftirfarandi dálkar:
-                        <li>(Áskilið) Dálkur 1 er nafn upptöku í <code>audio</code> möppunni.</li>
+                        <li>(Áskilið) Dálkur 1 er <code>path</code> á upptöku frá index skránni.</li>
                         <li>(Áskilið) Dálkur 2 er <code>R</code> ef setningin er upptaka en <code>S</code> ef setningin er talgerving.</li> Það sem merkt er <code>S</code> getur verið notað sem jarðtenging(ground truth) í ABX prófi.
                         <li>(Áskilið) Dálkur 3 er setningin sjálf. </li>
-                        <li>(Valkvætt) Dálkur 4 er númer á rödd, ef sama röddin les margar setningar þá á hún alltaf að bera sama númer hér </li>
-                        <li>(Valkvætt) Dálkur 5 er númer á setningu, ef margar raddir lesa sömu setninguna þá þurfa þær allar að bera sama númar hér </li>
-                        <li>(Valkvætt) Dálkur 6 er spurning ef það á að bera upp spurningu fyrir notnendur. </li>
+                        <li>(Áskilið) Dálkur 4 er <code>1</code> ef upptakan er ekki samanburðarhljóðklippa en <code>0</code> annars</li>
+                        <li>(Áskilið) Dálkur 5 er <code>strengur</code> eða <code>tala</code> sem auðkennir modelið sem viðkomandi setning tilheyrir. Setningar sem búnar eru til með sama modeli eru með sama auðkenni hér. Ground truth hefur sitt auðkenni líka. Hægt er að nota <code>gt</code>. </li>
+                        <li>(Áskilið) Dálkur 6 er númer á setningu, ef margar raddir lesa sömu setninguna þá þurfa þær allar að bera sama númar hér </li>
+                        <li>(Áskilið) Dálkur 7 er númer á rödd, ef sama röddin les margar setningar þá á hún alltaf að bera sama númer hér </li>
+                        <li>(Valkvætt) Dálkur 8 er spurning ef það á að bera upp spurningu fyrir notnendur. </li>
                         <br>
                         Sjá sýnidæmi.
                     </p>

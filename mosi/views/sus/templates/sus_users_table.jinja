@@ -1,0 +1,51 @@
+<table class='table'>
+    <thead>
+        <th>
+            Nafn notanda
+        </th>
+        <th>
+            Fjöldi greininga
+        </th>
+        <th>
+            Fjöldi rétt
+        </th>
+        <th>
+            Fjöldi rangt
+        </th>
+        <th>
+            Hlutfall
+        </th>
+        <th>
+            
+        </th>
+    </thead>
+    <tbody>
+        {% for user in users %}
+            <tr>
+                <td><a href={{user.get_url()}}>{{user.get_printable_name()}}</a></td>
+                <td>{{sus.getNumAllUserAnswers(user.id)}}</td>
+                <td>{{sus.getNumAllUserCorrectAnswers(user.id)}}</td>
+                <td>{{sus.getNumAllUserIncorrectAnswers(user.id)}}</td>
+                <td>
+                    {% if sus.get_ratio_models(sus.getNumAllUserAnswers(user.id), sus.getNumAllUserCorrectAnswers(user.id)) > 65 %}
+                        <div class="progress">
+                            <div class="progress-bar bg-success" role="progressbar" style="width:{{sus.get_ratio_models(sus.getNumAllUserAnswers(user.id), sus.getNumAllUserCorrectAnswers(user.id))}}%"></div>
+                        </div>                
+                    {% elif sus.get_ratio_models(sus.getNumAllUserAnswers(user.id), sus.getNumAllUserCorrectAnswers(user.id)) > 32 %}
+                        <div class="progress">
+                            <div class="progress-bar bg-warning" role="progressbar" style="width:{{sus.get_ratio_models(sus.getNumAllUserAnswers(user.id), sus.getNumAllUserCorrectAnswers(user.id))}}%"></div>
+                        </div>
+
+                    {% else %}
+                        <div class="progress">
+                            <div class="progress-bar bg-danger" role="progressbar" style="width:{{sus.get_ratio_models(sus.getNumAllUserAnswers(user.id), sus.getNumAllUserCorrectAnswers(user.id))}}%"></div>
+                        </div>   
+                    {% endif %}
+                </td>
+                <td>{{sus.get_ratio_models(sus.getNumAllUserAnswers(user.id), sus.getNumAllUserCorrectAnswers(user.id))}}%</td>
+
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+

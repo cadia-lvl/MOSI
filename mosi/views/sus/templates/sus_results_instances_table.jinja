@@ -1,0 +1,72 @@
+<table class='table'>
+    <thead>
+        <th>
+        </th>
+        <th>
+            Auðkenni setningar
+            {{macros.sort_th_a('id')}}
+        </th>
+        <th>
+            Texti
+        </th>
+        <th>
+            Fjöldi greininga
+        </th>
+        <th>
+            Fjöldi rétt
+        </th>
+        <th>
+            Fjöldi rangt
+        </th>
+        <th>
+            Hlutfall
+        </th>
+        <th>
+            
+        </th>
+    </thead>
+    <tbody>
+        {% for sus_obj in sus_list %}
+            <tr>
+                <td>
+                    <audio id="audio-{{sus_obj.custom_recording.id}}" src={{sus_obj.custom_recording.get_download_url()}} type="audio/wav"></audio>
+                    <button type='button' class='btn btn-link btn-sm' onClick="play({{sus_obj.custom_recording.id}})">
+                        <i id='playButtonIcon-{{sus_obj.custom_recording.id}}' class='fa fa-play'></i>
+                    </button>
+                </td>
+                {% if sus_obj.custom_token %}
+                    <td><a href={{sus_obj.custom_token.get_url()}} class='{% if sus_obj.custom_token.marked_as_bad %} text-warning {% endif %}'><code>{{sus_obj.custom_token.get_printable_id()}}</code></a></td>
+                {% else %}
+                    <td>-</td>
+                {% endif %}
+
+                <td>{{sus_obj.text}}</td>
+                <td>{{sus_obj.number_of_answers}}</td>
+                <td>{{sus_obj.number_of_correct_answers}}</td>
+                <td>{{sus_obj.number_of_incorrect_answers}}</td>
+                <td>
+                    {% if sus.get_ratio_models(sus_obj.number_of_answers, sus_obj.number_of_correct_answers) > 65 %}
+                        <div class="progress">
+                            <div class="progress-bar bg-success" role="progressbar" style="width:{{sus.get_ratio_models(sus_obj.number_of_answers, sus_obj.number_of_correct_answers)}}%"></div>
+                        </div>                
+                    {% elif sus.get_ratio_models(sus_obj.number_of_answers, sus_obj.number_of_correct_answers) > 32 %}
+                        <div class="progress">
+                            <div class="progress-bar bg-warning" role="progressbar" style="width:{{sus.get_ratio_models(sus_obj.number_of_answers, sus_obj.number_of_correct_answers)}}%"></div>
+                        </div>
+
+                    {% else %}
+                        <div class="progress">
+                            <div class="progress-bar bg-danger" role="progressbar" style="width:{{sus.get_ratio_models(sus_obj.number_of_answers, sus_obj.number_of_correct_answers)}}%"></div>
+                        </div>   
+                    {% endif %}
+                </td>
+                <td>{{sus.get_ratio_models(sus_obj.number_of_answers, sus_obj.number_of_correct_answers)}}%</td>
+
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+
+<script src='{{url_for("main.static", filename="js/listControls.js")}}'></script>
