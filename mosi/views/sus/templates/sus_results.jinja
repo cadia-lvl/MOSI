@@ -10,6 +10,12 @@
         </div>
 
         <div class='col-12 mb-4'>
+            <a href='{{url_for("sus.sus_detail", sus_id=sus.id)}}'
+               class='btn btn-success btn-sm float-left mr-2 mt-2'
+               >
+                {{macros.btn_icon('arrow-left', 'r')}}
+                Til baka í yfirlit
+            </a>
             <a href='{{url_for("sus.download_sus_data", sus_id=sus.id)}}'
                class='btn btn-primary btn-sm float-right mr-2 mt-2'
                target="_blank" download="sus_data_{{sus.id}}.tsv"

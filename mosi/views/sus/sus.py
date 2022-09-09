@@ -17,7 +17,8 @@ from mosi.decorators import (organiser_of_sus_or_admin, organiser_of_sus_instanc
 from mosi.models import (Sus, SusObject, User, SusAnswer,
                          CustomToken, CustomRecording, db)
 from mosi.db import (resolve_order, save_custom_sus_wav,
-                     delete_sus_object_db, save_SUS_ratings)
+                     delete_sus_object_db, save_SUS_ratings,
+                     delete_sus_test_db)
 from mosi.forms import (SusSelectAllForm, SusItemSelectionForm,
                         SusTestForm,
                         #SusUploadForm,
@@ -104,6 +105,7 @@ def sus_detail(sus_id):
     
     for s in sus_list:
         s.selection_form = SusItemSelectionForm(obj=s)
+    
     return render_template(
         'sus.jinja',
         sus=sus,
@@ -350,6 +352,7 @@ def sus_test(sus_uuid, user_uuid):
     audio_json = json.dumps([r.get_dict() for r in audio])
     sus_list_json = json.dumps([r.get_dict() for r in sus_list])
     sus_list_stats = {'len': len(sus_list)}
+
     return render_template(
         'sus_test.jinja',
         sus=sus,
@@ -389,7 +392,7 @@ def stream_SUS_index_demo():
     other_dir = app.config["OTHER_DIR"]
     try:
         return send_from_directory(
-            other_dir, 'synidaemi_sus_index.zip', as_attachment=True)
+            other_dir, 'synidaemi_sus.zip', as_attachment=True)
     except Exception as error:
         app.logger.error(
             "Error downloading a custom recording : {}\n{}".format(
@@ -458,6 +461,23 @@ def delete_sus_instance(sus_instance_id):
         flash("Ekki gekk að eyða línu rétt", category='warning')
         print(errors)
     return redirect(url_for('sus.sus_detail', sus_id=sus_id))
+
+@sus.route('/sus/<int:sus_id>/<uuid:sus_uuid>/delete/', methods=['GET'])
+@login_required
+@organiser_of_sus_or_admin
+def delete_sus_test(sus_id, sus_uuid):
+    sus = Sus.query.filter(Sus.uuid == str(sus_uuid)).first()
+    if sus.id == sus_id:
+        did_delete, errors = delete_sus_test_db(sus)
+        if did_delete:
+            flash("Prófi var eytt", category='success')
+        else:
+            flash("Ekki gekk að eyða prófi rétt", category='warning')
+            print(errors)
+    else:
+        flash("Ekki hægt að eyða", category='warning')
+        return redirect(url_for('sus.sus_detail', sus_id=sus_id))
+    return redirect(url_for('sus.sus_list'))
 
 
 @sus.route('/sus/post_sus_rating/<int:sus_id>', methods=['POST'])

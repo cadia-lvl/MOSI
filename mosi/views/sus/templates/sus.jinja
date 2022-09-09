@@ -22,17 +22,25 @@
             {{macros.btn_icon('upload', 'r')}}
             Hlaða upp
         </button>
-        <a href='{{url_for("sus.stream_SUS_zip", sus_id=sus.id)}}' class='btn btn-primary btn-sm float-right mr-2 mt-2'>
-            {{macros.btn_icon('download', 'r')}}
-            Sækja upptökur
-        </a>
         {% if sus_list | length > 0%}
+            <a href='{{url_for("sus.stream_SUS_zip", sus_id=sus.id)}}' class='btn btn-primary btn-sm float-right mr-2 mt-2'>
+                {{macros.btn_icon('download', 'r')}}
+                Sækja upptökur
+            </a>
+        {% else %}
+            <a class='btn btn-primary btn-sm disabled float-right mr-2 mt-2'>
+                {{macros.btn_icon('download', 'r')}}
+                Sækja upptökur
+            </a>
+        {% endif %}
+
+        {% if sus.number_selected > 0%}
             <a class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2' id='start-button' href='{{url_for("sus.sus_test", sus_uuid=sus.uuid, user_uuid=current_user.uuid)}}'>
                 {{macros.btn_icon('play', 'r')}}
                 Hefja SUS próf
             </a>
         {% else %}
-            <a disabled class='btn btn-secondary btn-sm text-success float-right mr-2 disabled mt-2' id='start-button' href='{{url_for("sus.sus_test", sus_uuid=sus.uuid, uuid=current_user.uuid)}}'>
+            <a disabled class='btn btn-secondary btn-sm text-success float-right mr-2 disabled mt-2'href='{{url_for("sus.sus_test", sus_uuid=sus.uuid, user_uuid=current_user.uuid)}}' id='start-button'>
                 {{macros.btn_icon('play', 'r')}}
                 Hefja SUS próf
             </a>
@@ -73,6 +81,9 @@
         <a class='btn btn-secondary btn-sm text-success float-right mt-2 mr-2' href='{{url_for("sus.sus_edit_detail", sus_id=sus.id)}}'>
             {{macros.btn_icon('edit', 'r')}}
             Breyta stillingum
+        </a>
+        <a id="deleteSusButton" class="btn btn-secondary btn-sm text-danger mt-2 mr-2 float-right" type="button" data-toggle='modal', data-target='#deleteSUSModal'>
+            {{macros.btn_icon('trash', 'r')}} Eyða SUS prófi
         </a>
     {% endif %}
 {% endblock %}
@@ -162,6 +173,32 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
                 <a id='confirmationButton' href='{{url_for("sus.delete_sus_instance", sus_instance_id=-1)}}' class='btn btn-danger'>
+                    Eyða
+                    {{macros.btn_icon('trash', 'l')}}
+                </a>
+            </div>
+            </div>
+        </div>
+    </div>
+
+     <div class="modal fade" id='deleteSUSModal' tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Þú ert við það að eyða SUS prófinu og öllum gögnum tengdu því!</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    Með því að eyða þessari lotu fremur þú alheimssglæp.
+                </p>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                <a id='confirmationButton' href='{{url_for("sus.delete_sus_test", sus_id=sus.id, sus_uuid=sus.uuid)}}' class='btn btn-danger'>
                     Eyða
                     {{macros.btn_icon('trash', 'l')}}
                 </a>

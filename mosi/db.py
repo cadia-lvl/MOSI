@@ -484,7 +484,6 @@ def delete_abtest_instance_db(instance):
 def delete_sus_object_db(instance):
     errors = []
     try:
-        os.remove(instance.custom_token.get_path())
         os.remove(instance.custom_recording.get_path())
     except Exception as error:
         errors.append("Remove from disk error")
@@ -518,6 +517,24 @@ def delete_abtest_user_ratings(user_id, abtest_id):
     try:
         for r in ratings:
             db.session.delete(r)
+        db.session.commit()
+    except Exception as error:
+        errors.append("Remove from database error")
+        print(f'{error}\n{traceback.format_exc()}')
+    if errors:
+        return False, errors
+    return True, errors
+
+def delete_sus_test_db(sus):
+    errors = []
+    try:
+        for instance in sus.sus_objects:
+            os.remove(instance.custom_recording.get_path())
+    except Exception as error:
+        errors.append("Remove from disk error")
+        print(f'{error}\n{traceback.format_exc()}')
+    try:
+        db.session.delete(sus)
         db.session.commit()
     except Exception as error:
         errors.append("Remove from database error")

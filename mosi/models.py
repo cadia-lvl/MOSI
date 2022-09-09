@@ -1293,6 +1293,10 @@ class Sus(BaseModel, db.Model):
     form_text = db.Column(db.String)
     help_text = db.Column(db.String)
     done_text = db.Column(db.String)
+    max_listens = db.Column(db.Integer, default=2, info={
+        'label': 'Fjöldi hlustana',
+        'min': 1,
+    })
     num_samples = db.Column(db.Integer, default=0, info={
         'label': 'Fjöldi setninga'
     })
@@ -1425,6 +1429,35 @@ class Sus(BaseModel, db.Model):
             self.num_participants = 1
         else:
             self.num_participants += 1
+    
+    def getResultData(self):
+        sus_data = [[
+            "instance_id",
+            "question",
+            "utterance_idx",
+            "voice_idx",
+            "user",
+            "name",
+            "age",
+            "audio_setup",
+            "true_text"
+            "answer",
+        ]]
+        for obj in self.sus_objects:
+            for rating in obj.answers:
+                sus_data.append([
+                    obj.id,
+                    obj.question if obj.question else "",
+                    obj.utterance_idx if obj.utterance_idx else "",
+                    obj.voice_idx if obj.voice_idx else "",
+                    rating.user_id if  rating.user_id else "",
+                    rating.user.name if rating.user.name else "",
+                    rating.user.age if rating.user.age else "",
+                    rating.user.audio_setup if rating.user.audio_setup else "",
+                    rating.token_text if rating.token_text else "",
+                    rating.answer if rating.answer else "",
+                ])
+        return sus_data
 
 
 class SusObject(BaseModel, db.Model):
@@ -1441,6 +1474,7 @@ class SusObject(BaseModel, db.Model):
         cascade='all, delete, delete-orphan')
     is_synth = db.Column(db.Boolean, default=False)
     voice_idx = db.Column(db.Integer, default=0)
+    model_idx = db.Column(db.String(20), default="")
     utterance_idx = db.Column(db.Integer, default=0)
     question = db.Column(db.Text, default="")
     selected = db.Column(db.Boolean, default=False, info={

@@ -20,6 +20,9 @@
 
                 </th>
                 <th>
+                    Hlustanir
+                </th>
+                <th>
                     Texti
                 </th>
                 <th>
@@ -29,14 +32,24 @@
             <tbody>
                 {% for sus_obj in sus_list %}
                     <tr>
-                        <td>
+                        <td class="col-md-1">
                             <audio id="audio-{{sus_obj.custom_recording.id}}" src={{sus_obj.custom_recording.get_download_url()}} type="audio/wav"></audio>
-                            <button type='button' class='btn btn-link btn-sm' onClick="play({{sus_obj.custom_recording.id}})">
+                            <button id='play-button-{{sus_obj.custom_recording.id}}' type='button' class='btn btn-link btn-sm' onClick="play({{sus_obj.custom_recording.id}})">
                                 <i id='playButtonIcon-{{sus_obj.custom_recording.id}}' class='fa fa-play'></i>
                             </button>
                         </td>
-
-                        <td><textarea name='{{sus_obj.id}}' class="form-control textarea" id="exampleFormControlTextarea1" rows="1"></textarea></td>
+                        <td class="col-md-1">
+                            <div class="row pl-4">
+                                <div id='num-played-{{sus_obj.custom_recording.id}}'>
+                                    0
+                                </div>
+                                /
+                                <div>
+                                    {{sus.max_listens}}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="col-md-9"><textarea name='{{sus_obj.id}}' class="form-control textarea" id="exampleFormControlTextarea1" rows="1"></textarea></td>
                         
                         <td>     
                             <span class=''>
@@ -52,5 +65,4 @@
     </form>
 </div>
 
-<script src='{{url_for("main.static", filename="js/listControls.js")}}'></script>
 

@@ -309,10 +309,12 @@ SusDetailForm = model_form(
         "done_text": {
             "label": "Þakkartexti", "widget": widgets.TextArea()
         },
+        "max_listens": {
+            "label": "Fjöldi hlustana", "widget": widgets.html5.NumberInput(step=1, min=1)
+        },
     },
     only=["question", "form_text", "help_text",
-          "done_text", "use_latin_square",
-          "show_text_in_test"])
+          "done_text", "use_latin_square", "max_listens"])
 
 
 class ABtestTestForm(Form):
