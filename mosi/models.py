@@ -443,6 +443,12 @@ class Mos(BaseModel, db.Model):
             voices.add(sample.voice_id)
         return voices
 
+    def getAllModelsIndices(self):
+        models = set()
+        for sample in self.mos_objects:
+            models.add(sample.model_idx)
+        return models
+
     def getAllUtteranceIndices(self):
         utterances = set()
         for sample in self.mos_objects:
@@ -487,6 +493,12 @@ class Mos(BaseModel, db.Model):
                 ])
         return mos_data
 
+    def get_voice_id_dict(self):
+        voices = list(self.getAllVoiceIndices())
+        vo_dict = {}
+        for i in range(len(voices)):
+            vo_dict[i] = voices[i]
+        return vo_dict
 
     def getConfigurations(self):
         """
@@ -503,12 +515,13 @@ class Mos(BaseModel, db.Model):
         utterances = list(self.getAllUtteranceIndices())
         num_voices = len(list(voices))
         latinSquareRows = balanced_latin_squares(num_voices)
+        vo_dict = self.get_voice_id_dict()
         configurations = []
         for row in latinSquareRows:
             configuration = []
             while len(configuration) < len(list(utterances)):
                 configuration.extend([x for x in self.mos_objects if (
-                        x.voice_idx == row[len(configuration) % len(row)]
+                        x.voice_id == vo_dict[row[len(configuration) % len(row)]]
                         and
                         x.utterance_idx == utterances[len(configuration)]
                     )])
