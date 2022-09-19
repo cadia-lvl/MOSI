@@ -371,7 +371,7 @@ class User(db.Model, UserMixin):
             ids.append(m.id)
         return ids
 
-    def is_admin_or_organiser_of_abtest(self, sus_id):
+    def is_admin_or_organiser_of_sus(self, sus_id):
         return sus_id in self.get_sus_ids or self.is_admin()
 
     @property
@@ -440,7 +440,7 @@ class Mos(BaseModel, db.Model):
     def getAllVoiceIndices(self):
         voices = set()
         for sample in self.mos_objects:
-            voices.add(sample.voice_idx)
+            voices.add(sample.voice_id)
         return voices
 
     def getAllUtteranceIndices(self):
@@ -559,16 +559,19 @@ class MosInstance(BaseModel, db.Model):
         cascade='all, delete, delete-orphan')
     is_synth = db.Column(db.Boolean, default=False)
     voice_idx = db.Column(db.Integer, default=0)
+    voice_id = db.Column(db.String(30), default="")
     utterance_idx = db.Column(db.Integer, default=0)
+    model_idx = db.Column(db.String(30), default="")
     question = db.Column(db.Text, default="")
     selected = db.Column(db.Boolean, default=False, info={
         'label': 'Hafa upptoku'})
 
-    def __init__(self, custom_recording, voice_idx=None, utterance_idx=None, question=None):
+    def __init__(self, custom_recording, voice_id=None, utterance_idx=None, model_idx=None, question=None):
         self.custom_recording = custom_recording
-        self.voice_idx = voice_idx
+        self.voice_id = voice_id
         self.utterance_idx = utterance_idx
         self.question = question
+        self.model_idx = model_idx
 
     def getUserRating(self, user_id):
         for r in self.ratings:
@@ -966,7 +969,7 @@ class ABtest(BaseModel, db.Model):
 
     @property
     def edit_url(self):
-        return url_for('mos.mos_edit', id=self.id)
+        return url_for('abtest.abtest_edit', id=self.id)
 
     @property
     def number_selected(self):

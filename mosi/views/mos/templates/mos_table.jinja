@@ -14,6 +14,15 @@
                 Meðaleinkunn
             </th>
             <th>
+                Rödd
+            </th>
+            <th>
+                Módel
+            </th>
+            <th>
+                Nr. texta
+            </th>
+            <th>
                 <div class="btn-group" style="margin-bottom: -8px;">
 
                     <form id='selectAllForm' method="POST" action="{{url_for('mos.mos_select_all', mos_id=mos.id)}}">
@@ -54,6 +63,9 @@
 
                     <td>{{mos.text}}</td>
                     <td>{{mos.average_rating}}</td>
+                    <td>{{mos.voice_id}}</td>
+                    <td>{{mos.model_idx}}</td>
+                    <td>{{mos.utterance_idx}}</td>
                     <td>
                         <form class="mos-check-button" id="verificationForm" name="mos-{{mos.id}}" action="{{mos.ajax_edit_action}}" method="POST">
                             {% for field in mos.selection_form %}

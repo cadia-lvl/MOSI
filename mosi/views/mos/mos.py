@@ -197,6 +197,8 @@ def mos_test(id, uuid):
         mos_instances = MosInstance.query.filter(MosInstance.mos_id == id, MosInstance.selected == True)
         mos_list = [instance for instance in mos_instances if instance.path]
         random.shuffle(mos_list)
+        if mos.num_samples and mos.num_samples < len(mos_list):
+            mos_list = mos_list[:mos.num_samples]
 
     audio = []
     audio_url = []

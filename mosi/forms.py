@@ -6,7 +6,6 @@ from flask_wtf.file import FileField, FileAllowed, FileRequired
 from wtforms import (Form, HiddenField, MultipleFileField, SelectMultipleField,
                      SelectField, TextField, BooleanField, validators,
                      ValidationError, FloatField, widgets, StringField)
-
 from wtforms.ext.sqlalchemy.fields import QuerySelectField
 from wtforms.ext.sqlalchemy.orm import model_form
 from wtforms.fields.html5 import EmailField
@@ -167,7 +166,7 @@ class MosForm(ModelForm):
         model = Mos
         exclude = ['uuid']
         num_samples = IntegerField(
-            'Fjöldi setnimmnga',
+            'Fjöldi setninga',
             [validators.required()])
 
     def __init__(self, max_available, *args, **kwargs):
@@ -202,6 +201,9 @@ MosDetailForm = model_form(
         "done_text": {
             "label": "Þakkartexti", "widget": widgets.TextArea()
         },
+        "num_samples": {
+            "label": "Fjöldi setninga", "widget": widgets.html5.NumberInput(min=0, max=90)
+        },
         "use_latin_square": {
             "label": "Nota latin-square"
         },
@@ -210,7 +212,7 @@ MosDetailForm = model_form(
         },
     },
     only=["question", "form_text", "help_text",
-          "done_text", "use_latin_square",
+          "done_text", "use_latin_square", "num_samples",
           "show_text_in_test"])
 
 

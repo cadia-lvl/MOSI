@@ -137,11 +137,14 @@ def save_custom_wav(zip, zip_name, tsv_name, mos, id):
         uploaded_obj = []
         for row in rd:
             print(row)
+            print(row[0])
             if row[0] and (len(row) == 3 or len(row) == 5 or len(row) == 6):
                 # Validate columns
+                print(len(row))
                 if not ((row[1].lower() == 's' or row[1].lower() == 'r') and row[2]):
+                    print('asdf')
                     continue
-                if len(row) >= 5 and not (row[3] and row[3].isnumeric() and row[4] and row[4].isnumeric()):
+                if len(row) >= 5 and not (row[3] and row[4] and row[4].isnumeric()):
                     continue
 
                 for zip_info in zip.infolist():
@@ -161,18 +164,25 @@ def save_custom_wav(zip, zip_name, tsv_name, mos, id):
                         elif len(row) == 4:
                             mos_instance = MosInstance(
                                 custom_recording=custom_recording,
-                                voice_idx=row[3])
+                                voice_id=row[3])
                         elif len(row) == 5:
                             mos_instance = MosInstance(
                                 custom_recording=custom_recording,
-                                voice_idx=row[3],
+                                voice_id=row[3],
                                 utterance_idx=row[4])
                         elif len(row) == 6:
                             mos_instance = MosInstance(
                                 custom_recording=custom_recording,
-                                voice_idx=row[3],
+                                voice_id=row[3],
                                 utterance_idx=row[4],
-                                question=row[5])
+                                model_idx=row[5])
+                        elif len(row) == 7:
+                            mos_instance = MosInstance(
+                                custom_recording=custom_recording,
+                                voice_id=row[3],
+                                utterance_idx=row[4],
+                                model_idx=row[5],
+                                question=row[6])
                         db.session.add(custom_token)
                         db.session.add(custom_recording)
                         db.session.add(mos_instance)
