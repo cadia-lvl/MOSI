@@ -136,13 +136,9 @@ def save_custom_wav(zip, zip_name, tsv_name, mos, id):
         pathlib.Path(webm_path).mkdir(exist_ok=True)
         uploaded_obj = []
         for row in rd:
-            print(row)
-            print(row[0])
             if row[0] and (len(row) == 3 or len(row) == 5 or len(row) == 6):
                 # Validate columns
-                print(len(row))
                 if not ((row[1].lower() == 's' or row[1].lower() == 'r') and row[2]):
-                    print('asdf')
                     continue
                 if len(row) >= 5 and not (row[3] and row[4] and row[4].isnumeric()):
                     continue
