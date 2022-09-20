@@ -20,7 +20,7 @@
                 Módel
             </th>
             <th>
-                Nr. texta
+                Annað
             </th>
             <th>
                 <div class="btn-group" style="margin-bottom: -8px;">
@@ -65,7 +65,7 @@
                     <td>{{mos.average_rating}}</td>
                     <td>{{mos.voice_id}}</td>
                     <td>{{mos.model_idx}}</td>
-                    <td>{{mos.utterance_idx}}</td>
+                    <td>{{mos.additional_id}}</td>
                     <td>
                         <form class="mos-check-button" id="verificationForm" name="mos-{{mos.id}}" action="{{mos.ajax_edit_action}}" method="POST">
                             {% for field in mos.selection_form %}

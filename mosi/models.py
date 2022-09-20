@@ -575,16 +575,18 @@ class MosInstance(BaseModel, db.Model):
     voice_id = db.Column(db.String(30), default="")
     utterance_idx = db.Column(db.Integer, default=0)
     model_idx = db.Column(db.String(30), default="")
+    additional_id = db.Column(db.String(255), default="")
     question = db.Column(db.Text, default="")
     selected = db.Column(db.Boolean, default=False, info={
         'label': 'Hafa upptoku'})
 
-    def __init__(self, custom_recording, voice_id=None, utterance_idx=None, model_idx=None, question=None):
+    def __init__(self, custom_recording, voice_id=None, utterance_idx=None, model_idx=None, additional_id=None, question=None):
         self.custom_recording = custom_recording
         self.voice_id = voice_id
         self.utterance_idx = utterance_idx
         self.question = question
         self.model_idx = model_idx
+        self.additional_id = additional_id
 
     def getUserRating(self, user_id):
         for r in self.ratings:

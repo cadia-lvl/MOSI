@@ -136,7 +136,7 @@ def save_custom_wav(zip, zip_name, tsv_name, mos, id):
         pathlib.Path(webm_path).mkdir(exist_ok=True)
         uploaded_obj = []
         for row in rd:
-            if row[0] and (len(row) == 3 or len(row) == 5 or len(row) == 6):
+            if row[0] and (len(row) >= 3):
                 # Validate columns
                 if not ((row[1].lower() == 's' or row[1].lower() == 'r') and row[2]):
                     continue
@@ -178,7 +178,15 @@ def save_custom_wav(zip, zip_name, tsv_name, mos, id):
                                 voice_id=row[3],
                                 utterance_idx=row[4],
                                 model_idx=row[5],
-                                question=row[6])
+                                additional_id=row[6])
+                        elif len(row) == 8:
+                            mos_instance = MosInstance(
+                                custom_recording=custom_recording,
+                                voice_id=row[3],
+                                utterance_idx=row[4],
+                                model_idx=row[5],
+                                additional_id=row[6],
+                                question=row[7])
                         db.session.add(custom_token)
                         db.session.add(custom_recording)
                         db.session.add(mos_instance)
