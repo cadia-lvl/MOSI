@@ -392,6 +392,7 @@ class Mos(BaseModel, db.Model):
     form_text = db.Column(db.String)
     help_text = db.Column(db.String)
     done_text = db.Column(db.String)
+    display_name = db.Column(db.String(255), default="")
     use_latin_square = db.Column(db.Boolean, default=False)
     show_text_in_test = db.Column(db.Boolean, default=True)
     num_samples = db.Column(db.Integer, default=0, info={
@@ -406,7 +407,11 @@ class Mos(BaseModel, db.Model):
         secondary=user_mos_test_admin,
         back_populates="mos_test_admin")
 
-
+    @property
+    def get_display_name(self):
+        if self.display_name:
+            return self.display_name
+        return self.printable_id
         
     def is_user_admin(self, user_id):
         for i in self.admins:

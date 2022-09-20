@@ -192,6 +192,9 @@ MosDetailForm = model_form(
         "question": {
             "label": "Spurning",
         },
+        "display_name": {
+            "label": "Nafn á prófi",
+        },
         "form_text": {
             "label": "Form texti", "widget": widgets.TextArea()
         },
@@ -213,7 +216,7 @@ MosDetailForm = model_form(
     },
     only=["question", "form_text", "help_text",
           "done_text", "use_latin_square", "num_samples",
-          "show_text_in_test"])
+          "show_text_in_test", 'display_name'])
 
 
 class MosItemSelectionForm(ModelForm):

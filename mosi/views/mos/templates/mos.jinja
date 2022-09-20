@@ -3,6 +3,7 @@
 {% block total %}{{mos_list|length}}{% endblock %}
 
 {% block header_content %}
+    <p>Nafn á prófi: {{mos.get_display_name}}</p>
     <p>Þetta próf notar {% if not mos.use_latin_square %}<span class="text-warning">ekki</span> {% endif %}Latin Square</p>
     <p>Þetta próf sýnir {% if not mos.show_text_in_test %}<span class="text-warning">ekki</span> {% endif %}texta setningar sem hlustað er á</p>
     <div class="float-left text-warning">
@@ -125,7 +126,8 @@
                         <li>(Valkvætt) Dálkur 4 er númer á rödd, ef sama röddin les margar setningar þá á hún alltaf að bera sama númer hér </li>
                         <li>(Valkvætt) Dálkur 5 er númer á setningu, ef margar raddir lesa sömu setninguna þá þurfa þær allar að bera sama númar hér </li>
                         <li>(Valkvætt) Dálkur 6 er númer á modeli sem býr til röddina. </li>
-                        <li>(Valkvætt) Dálkur 7 er spurning ef það á að bera upp spurningu fyrir notnendur. </li>
+                        <li>(Valkvætt) Dálkur 7 er strengur eða annað sem þú vilt geta notað til að merkja klippuna. </li>
+                        <li>(Valkvætt) Dálkur 8 er spurning ef það á að bera upp spurningu fyrir notnendur. </li>
                         
                         <br>
                         Sjá sýnidæmi
