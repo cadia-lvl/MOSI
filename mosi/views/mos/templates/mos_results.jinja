@@ -516,7 +516,13 @@
             marker: {
                 color: '#00bc8c'
             },
-            width: width
+            width: width,
+            error_y: {
+                type: 'data',
+                array: voice_data['std'],
+                visible: true,
+                color:'red'
+            },
         };
         var layout_bar = {
             barmode: 'group',
@@ -559,7 +565,13 @@
             marker: {
                 color: '#00bc8c'
             },
-            width: width
+            width: width,
+            error_y: {
+                type: 'data',
+                array: model_data['std'],
+                visible: true,
+                color:'red'
+            },
         };
         var layout_bar = {
             barmode: 'group',
