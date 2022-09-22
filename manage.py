@@ -20,11 +20,11 @@ from termcolor import colored
 from collections import defaultdict
 
 from mosi import app
-from mosi.models import (User, Role, ABRating, ABTuple,
+from mosi.models import (User, Role, ABRating, ABTuple, MosRating,
                          db, MosInstance, ABtest, Mos, Sus)
 from mosi.tools.analyze import (load_sample, signal_is_too_high,
                                 signal_is_too_low)
-from mosi.db import delete_abtest_rating_if_exists
+from mosi.db import delete_abtest_rating_if_exists, delete_MOS_rating_if_exists
 
 
 migrate = Migrate(app, db, compare_type=True)
@@ -197,6 +197,44 @@ def add_dummy_user_ratings():
             i.ratings.append(rating)
     db.session.commit()
 
+@manager.command
+def add_dummy_user_ratings_mos():
+    mos_id = 7
+    mos = Mos.query.get(mos_id)
+    users = []
+    for i in range(30):
+        user_uuid = uuid.uuid4()
+        email = "{}@mosi.is".format(user_uuid)
+        new_user = app.user_datastore.create_user(
+            name='testuser_{}'.format(i),
+            email=email,
+            password=None,
+            uuid=user_uuid,
+            audio_setup=None,
+            roles=['mos_tester', 'test_partitipant']
+        )
+        mos.add_participant(new_user)
+        users.append(new_user)
+    db.session.commit()
+
+
+    mos_obj_list_all = MosInstance.query.filter(MosInstance.mos_id == 7 and MosInstance.selected == True).all()
+    for u in users:
+        mos_obj_list = random.sample(mos_obj_list_all, 30)
+        user_id = u.id
+        if len(mos_obj_list) == 0:
+            return None
+        counter = 1
+        for i in mos_obj_list:
+            delete_MOS_rating_if_exists(i.id, user_id)
+            rating = MosRating()
+            rand_rating = random.randint(1,5)
+            rating.rating = int(rand_rating)
+            rating.user_id = user_id
+            rating.placement = counter
+            counter += 1
+            i.ratings.append(rating)
+    db.session.commit()
 
 
 class AddColumnDefaults(Command):

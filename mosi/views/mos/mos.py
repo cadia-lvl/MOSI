@@ -319,10 +319,22 @@ def mos_results(mos_id):
         "y": [],
         "std": [],
     }
-    for voice_idx, ratings in ratings_by_voice.items():
-        per_voice_data["x"].append(voice_idx)
+    for voice_id, ratings in ratings_by_voice.items():
+        per_voice_data["x"].append(voice_id)
         per_voice_data["y"].append(round(np.mean([r.rating for r in ratings]), 2))
         per_voice_data["std"].append(round(np.std([r.rating for r in ratings]), 2))
+    
+    # Average per voice index
+    ratings_by_model = mos.getResultsByModel()
+    per_model_data = {
+        "x": [],
+        "y": [],
+        "std": [],
+    }
+    for model_id, ratings in ratings_by_model.items():
+        per_model_data["x"].append(model_id)
+        per_model_data["y"].append(round(np.mean([r.rating for r in ratings]), 2))
+        per_model_data["std"].append(round(np.std([r.rating for r in ratings]), 2))
 
     return render_template(
         'mos_results.jinja',
@@ -336,6 +348,7 @@ def mos_results(mos_id):
         rating_json=rating_json,
         users_graph_json=users_graph_json,
         per_voice_data=per_voice_data,
+        per_model_data=per_model_data,
         mos_list=mos_list,
         section='mos'
     )

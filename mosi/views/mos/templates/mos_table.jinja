@@ -50,7 +50,7 @@
             {% for mos in mos_list %}
                 <tr>
                     <td>
-                        <audio id="audio-{{mos.custom_recording.id}}" src={{mos.custom_recording.get_download_url()}} type="audio/wav"></audio>
+                        <audio preload="none" id="audio-{{mos.custom_recording.id}}" src={{mos.custom_recording.get_download_url()}} type="audio/wav"></audio>
                         <button type='button' class='btn btn-link btn-sm' onClick="play({{mos.custom_recording.id}})">
                             <i id='playButtonIcon-{{mos.custom_recording.id}}' class='fa fa-play'></i>
                         </button>

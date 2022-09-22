@@ -464,8 +464,15 @@ class Mos(BaseModel, db.Model):
         voice_ratings = defaultdict(list)
         for obj in self.mos_objects:
             for rating in obj.ratings:
-                voice_ratings["No ID" if obj.voice_idx is None else obj.voice_idx].append(rating)
+                voice_ratings["No ID" if obj.voice_id is None else obj.voice_id].append(rating)
         return voice_ratings
+    
+    def getResultsByModel(self):
+        model_ratings = defaultdict(list)
+        for obj in self.mos_objects:
+            for rating in obj.ratings:
+                model_ratings["No ID" if obj.model_idx is None else obj.model_idx].append(rating)
+        return model_ratings
 
     def getResultData(self):
         mos_data = [[
@@ -532,6 +539,7 @@ class Mos(BaseModel, db.Model):
                     )])
             configurations.append(configuration)
         return configurations
+
 
     @property
     def custom_tokens(self):

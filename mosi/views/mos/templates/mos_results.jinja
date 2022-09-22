@@ -160,6 +160,18 @@
         </div>
     </div>
 
+    <div class='col-12 mb-5' style="margin-top: 50px;">
+        <h3 class='font-weight-bold'>Meðaleinkunn módela</h3>
+        <p>
+            Hver stöpull sýnir meðaleinkunn eftir módeli.
+        </p>
+        <div class='card'>
+            <div class='card-body'>
+                <div id='bar-chart-model'>
+                </div>
+            </div>
+        </div>
+    </div>
 
 {% endblock %}
 
@@ -220,7 +232,7 @@
                 },
                 xaxis:{
                     title:{
-                        text: 'Drykkur'
+                        text: 'Auðkenni setningar'
                     },
                     type: 'category',
                     tickmode:'linear'
@@ -534,6 +546,49 @@
             }
         };
         Plotly.newPlot(container_bar_voices, [voice_trace], layout_bar, config);
+
+
+
+        var container_bar_models = document.getElementById('bar-chart-model');
+        var model_data = {{per_model_data}};
+        var model_trace = {
+            x: model_data['x'],
+            y: model_data['y'],
+            name: 'Meðaleinkunn',
+            type: 'bar',
+            marker: {
+                color: '#00bc8c'
+            },
+            width: width
+        };
+        var layout_bar = {
+            barmode: 'group',
+            plot_bgcolor: 'rgba(0, 0, 0, 0)',
+            paper_bgcolor: 'rgba(0, 0, 0, 0)',
+            margin: {
+                'l': 30,
+                'r': 30,
+                't': 30,
+                'b': 30
+            },
+            font: {
+                color: 'white'
+            },
+            yaxis:{
+                title:{
+                    text: 'Meðaleinkunn'
+                },
+                range: [0,5]
+
+            },
+            xaxis:{
+                title:{
+                    text: 'Módel'
+                },
+                tickmode: 'linear'
+            }
+        };
+        Plotly.newPlot(container_bar_models, [model_trace], layout_bar, config);
 
     </script>
 {% endblock %}
