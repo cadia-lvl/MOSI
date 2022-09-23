@@ -74,13 +74,28 @@
 
     {% if per_voice_data.x |length > 1 %}
         <div class="wrapper" style="margin-top: 10px;">
-            <div style="background-color: #303030; padding-left: 8px;" data-toggle="collapse" data-target="#collapse-voices" aria-expanded="false" aria-controls="collapse-ratings" style="cursor: pointer;">
+            <div style="background-color: #303030; padding-left: 8px;" data-toggle="collapse" data-target="#collapse-voices" aria-expanded="false" aria-controls="collapse-models" style="cursor: pointer;">
                 <p class="py-2 text-success"><i class="fas fa-plus mr-2" aria-hidden="true"></i> Raddir</p>
             </div>
             <div class="collapse" id="collapse-voices">
                 {% if per_voice_data|length > 0 %}
                     {% with per_voice_data=per_voice_data %}
                         {% include 'mos_results_voices_table.jinja'%}
+                    {% endwith %}
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+
+        {% if per_model_data.x |length > 1 %}
+        <div class="wrapper" style="margin-top: 10px;">
+            <div style="background-color: #303030; padding-left: 8px;" data-toggle="collapse" data-target="#collapse-models" aria-expanded="false" aria-controls="collapse-models" style="cursor: pointer;">
+                <p class="py-2 text-success"><i class="fas fa-plus mr-2" aria-hidden="true"></i> Módel</p>
+            </div>
+            <div class="collapse" id="collapse-models">
+                {% if per_model_data|length > 0 %}
+                    {% with per_model_data=per_model_data %}
+                        {% include 'mos_results_models_table.jinja'%}
                     {% endwith %}
                 {% endif %}
             </div>
