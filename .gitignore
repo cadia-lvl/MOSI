@@ -1,4 +1,5 @@
 env/
+venv/
 py38/
 
 #data/
