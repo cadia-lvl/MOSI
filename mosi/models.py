@@ -516,6 +516,13 @@ class Mos(BaseModel, db.Model):
             vo_dict[i] = voices[i]
         return vo_dict
 
+    def get_model_id_dict(self):
+        models = list(self.getAllModelsIndices())
+        mdl_dict = {}
+        for i in range(len(models)):
+            mdl_dict[i] = models[i]
+        return mdl_dict
+
     def getConfigurations(self):
         """
         Generates a Latin square of sentence-system combinations 
@@ -523,21 +530,33 @@ class Mos(BaseModel, db.Model):
 
         Input: none
         Output: an array of arrays, each containing MosInstance objects, wherein each 
-        MosInstance object refers to a particular voice rendering a particular utterance.
+        MosInstance object refers to a particular model rendering a particular utterance.
         This results in a balanced test, which should minimize the effect of each sentence
         and the carry-over effect of speakers on each other.
         """
         voices = list(self.getAllVoiceIndices())
+        models = list(self.getAllModelsIndices())
         utterances = list(self.getAllUtteranceIndices())
-        num_voices = len(list(voices))
-        latinSquareRows = balanced_latin_squares(num_voices)
+        num_variations = len(list(models)) * len(list(voices))
+        latinSquareRows = balanced_latin_squares(num_variations)
         vo_dict = self.get_voice_id_dict()
+        mdl_dict = self.get_model_id_dict()
+        print(mdl_dict, models)
+        print(vo_dict, voices)
+        
         configurations = []
         for row in latinSquareRows:
             configuration = []
             while len(configuration) < len(list(utterances)):
+                # Values in the row array range from 0 to num_variations, and we want each of them to represent a unique combination of voice and model
+                # In this case, we cycle through the models using modulo, completing len(voices) cycles
+                # s.t. values 0, 1, ... len(models) - 1 represent the first voice, rendered by each of the models,
+                # values len(models), len(models) + 1, ... 2*len(models) - 1 represent the second voice, rendered by each of the models, and so on
+                # Since num_variations = len(models) * len(voices), we get exactly one instance of each voice-model combination per full cycle
                 configuration.extend([x for x in self.mos_objects if (
-                        x.voice_id == vo_dict[row[len(configuration) % len(row)]]
+                        x.model_idx == mdl_dict[row[len(configuration) % len(row) ] % len(list(models))]
+                        and
+                        x.voice_id == vo_dict[row[len(configuration) % len(row) ] // len(list(models))]
                         and
                         x.utterance_idx == utterances[len(configuration)]
                     )])
